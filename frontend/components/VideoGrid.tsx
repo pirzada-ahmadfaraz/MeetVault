@@ -1,18 +1,37 @@
-import { Participant } from '@/types'
+import { Participant } from '@/services/webrtc'
 import VideoTile from './VideoTile'
 
 interface VideoGridProps {
   participants: Participant[]
+  localStream: MediaStream | null
+  participantStreams: Map<string, MediaStream>
   isVideoEnabled: boolean
   isScreenSharing: boolean
+  currentUser: any
 }
 
-export default function VideoGrid({ 
-  participants, 
-  isVideoEnabled, 
-  isScreenSharing 
+export default function VideoGrid({
+  participants,
+  localStream,
+  participantStreams,
+  isVideoEnabled,
+  isScreenSharing,
+  currentUser
 }: VideoGridProps) {
-  const activeParticipants = participants.filter(p => !p.leftAt)
+  // Add current user as a participant for display
+  const allParticipants = [
+    ...(currentUser ? [{
+      id: 'local',
+      userId: currentUser._id,
+      user: currentUser,
+      isHost: false, // This will be updated based on meeting data
+      isVideoEnabled,
+      isAudioEnabled: true, // This should come from WebRTC state
+      isScreenSharing: false,
+      stream: localStream
+    }] : []),
+    ...participants
+  ]
   
   // Calculate grid layout based on number of participants
   const getGridCols = (count: number) => {
@@ -49,10 +68,11 @@ export default function VideoGrid({
 
         {/* Small participant tiles */}
         <div className="h-24 flex space-x-2 overflow-x-auto">
-          {activeParticipants.map((participant) => (
-            <div key={participant._id} className="flex-shrink-0 w-32">
+          {allParticipants.map((participant) => (
+            <div key={participant.id} className="flex-shrink-0 w-32">
               <VideoTile
                 participant={participant}
+                stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
                 isSmall={true}
                 showControls={false}
               />
@@ -65,18 +85,19 @@ export default function VideoGrid({
 
   // Regular grid layout
   return (
-    <div className={`h-full grid gap-4 ${getGridCols(activeParticipants.length)} ${getGridRows(activeParticipants.length)}`}>
-      {activeParticipants.map((participant) => (
+    <div className={`h-full grid gap-4 ${getGridCols(allParticipants.length)} ${getGridRows(allParticipants.length)}`}>
+      {allParticipants.map((participant) => (
         <VideoTile
-          key={participant._id}
+          key={participant.id}
           participant={participant}
+          stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
           isSmall={false}
           showControls={true}
         />
       ))}
-      
+
       {/* Empty state when no participants */}
-      {activeParticipants.length === 0 && (
+      {allParticipants.length === 0 && (
         <div className="col-span-full flex items-center justify-center">
           <div className="text-center text-gray-400">
             <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Meeting } from '@/types'
 import { useAuth } from '@/lib/auth-context'
-import socketService from '@/lib/socket'
+import { WebRTCService, Participant } from '@/services/webrtc'
 import VideoGrid from './VideoGrid'
 import ChatPanel from './ChatPanel'
 import MeetingControls from './MeetingControls'
@@ -34,6 +34,12 @@ export default function MeetingRoom({
   const [isAudioEnabled, setIsAudioEnabled] = useState(true)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(!hasJoined)
+  const [participants, setParticipants] = useState<Participant[]>([])
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null)
+  const [participantStreams, setParticipantStreams] = useState<Map<string, MediaStream>>(new Map())
+  const [error, setError] = useState<string | null>(null)
+
+  const webRTCService = useRef<WebRTCService | null>(null)
 
   const isHost = meeting.host._id === user?._id
 
@@ -42,35 +48,71 @@ export default function MeetingRoom({
   }, [hasJoined])
 
   useEffect(() => {
-    if (hasJoined) {
-      // Join the meeting room via Socket.IO
-      socketService.joinMeeting(meeting.meetingId)
+    if (hasJoined && !webRTCService.current) {
+      initializeWebRTC()
+    }
 
-      // Set up socket event listeners
-      socketService.onUserJoined((data) => {
-        console.log('User joined:', data)
-        // TODO: Update participants list
-      })
-
-      socketService.onUserLeft((data) => {
-        console.log('User left:', data)
-        // TODO: Update participants list
-      })
-
-      socketService.onSocketError((error) => {
-        console.error('Socket error:', error)
-        onError('Connection error occurred')
-      })
-
-      return () => {
-        // Leave the meeting room and clean up listeners
-        socketService.leaveMeeting(meeting.meetingId)
-        socketService.off('user-joined')
-        socketService.off('user-left')
-        socketService.off('error')
+    return () => {
+      if (webRTCService.current) {
+        webRTCService.current.leaveMeeting()
+        webRTCService.current.disconnect()
+        webRTCService.current = null
       }
     }
-  }, [hasJoined, meeting.meetingId, onError])
+  }, [hasJoined, meeting.meetingId])
+
+  const initializeWebRTC = async () => {
+    webRTCService.current = new WebRTCService()
+
+    const callbacks = {
+      onParticipantJoined: (participant: Participant) => {
+        console.log('Participant joined:', participant)
+        setParticipants(prev => [...prev, participant])
+      },
+      onParticipantLeft: (participantId: string) => {
+        console.log('Participant left:', participantId)
+        setParticipants(prev => prev.filter(p => p.id !== participantId))
+        setParticipantStreams(prev => {
+          const newMap = new Map(prev)
+          newMap.delete(participantId)
+          return newMap
+        })
+      },
+      onParticipantStreamUpdated: (participantId: string, stream: MediaStream) => {
+        console.log('Participant stream updated:', participantId)
+        setParticipantStreams(prev => new Map(prev.set(participantId, stream)))
+      },
+      onParticipantScreenShareStarted: (participantId: string, stream: MediaStream) => {
+        console.log('Screen share started:', participantId)
+        // Handle screen share
+      },
+      onParticipantScreenShareStopped: (participantId: string) => {
+        console.log('Screen share stopped:', participantId)
+        // Handle screen share stop
+      },
+      onParticipantToggleVideo: (participantId: string, enabled: boolean) => {
+        setParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, isVideoEnabled: enabled } : p)
+        )
+      },
+      onParticipantToggleAudio: (participantId: string, enabled: boolean) => {
+        setParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, isAudioEnabled: enabled } : p)
+        )
+      },
+      onError: (error: string) => {
+        console.error('WebRTC error:', error)
+        setError(error)
+        onError(error)
+      }
+    }
+
+    const success = await webRTCService.current.joinMeeting(meeting.meetingId, callbacks)
+    if (success) {
+      const stream = webRTCService.current.getLocalStream()
+      setLocalStream(stream)
+    }
+  }
 
   const handleJoinWithPassword = async (password?: string) => {
     try {
@@ -81,26 +123,24 @@ export default function MeetingRoom({
     }
   }
 
-  const handleToggleVideo = () => {
-    const newVideoState = !isVideoEnabled
-    setIsVideoEnabled(newVideoState)
-    socketService.toggleVideo(meeting.meetingId, newVideoState)
+  const handleToggleVideo = async () => {
+    if (webRTCService.current) {
+      const enabled = await webRTCService.current.toggleVideo()
+      setIsVideoEnabled(enabled)
+    }
   }
 
-  const handleToggleAudio = () => {
-    const newAudioState = !isAudioEnabled
-    setIsAudioEnabled(newAudioState)
-    socketService.toggleAudio(meeting.meetingId, newAudioState)
+  const handleToggleAudio = async () => {
+    if (webRTCService.current) {
+      const enabled = await webRTCService.current.toggleAudio()
+      setIsAudioEnabled(enabled)
+    }
   }
 
-  const handleToggleScreenShare = () => {
-    const newScreenShareState = !isScreenSharing
-    setIsScreenSharing(newScreenShareState)
-    
-    if (newScreenShareState) {
-      socketService.startScreenShare(meeting.meetingId)
-    } else {
-      socketService.stopScreenShare(meeting.meetingId)
+  const handleToggleScreenShare = async () => {
+    if (webRTCService.current) {
+      const enabled = await webRTCService.current.toggleScreenShare()
+      setIsScreenSharing(enabled)
     }
   }
 
@@ -157,9 +197,12 @@ export default function MeetingRoom({
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'mr-80' : ''}`}>
           <div className="flex-1 p-4">
             <VideoGrid
-              participants={meeting.participants}
+              participants={participants}
+              localStream={localStream}
+              participantStreams={participantStreams}
               isVideoEnabled={isVideoEnabled}
               isScreenSharing={isScreenSharing}
+              currentUser={user}
             />
           </div>
 

@@ -1,4 +1,5 @@
-import { Participant } from '@/types'
+import { Participant } from '@/services/webrtc'
+import { useEffect, useRef } from 'react'
 import {
   MicrophoneIcon,
   VideoCameraIcon,
@@ -9,32 +10,41 @@ import {
 
 interface VideoTileProps {
   participant: Participant
+  stream?: MediaStream | null
   isSmall?: boolean
   showControls?: boolean
 }
 
-export default function VideoTile({ 
-  participant, 
-  isSmall = false, 
-  showControls = true 
+export default function VideoTile({
+  participant,
+  stream,
+  isSmall = false,
+  showControls = true
 }: VideoTileProps) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream
+    }
+  }, [stream])
   const { user, isVideoEnabled, isAudioEnabled, isScreenSharing, isHost } = participant
 
   return (
     <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isSmall ? 'h-24' : 'h-full min-h-[200px]'}`}>
-      {/* Video placeholder */}
+      {/* Video content */}
       <div className="w-full h-full flex items-center justify-center">
-        {isVideoEnabled ? (
-          // Video stream placeholder
-          <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-            <div className="text-center text-white">
-              <VideoCameraIcon className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">Video Stream</p>
-              <p className="text-xs text-gray-200">(WebRTC placeholder)</p>
-            </div>
-          </div>
+        {isVideoEnabled && stream ? (
+          // Real video stream
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted={participant.id === 'local'} // Mute local video to prevent echo
+            className="w-full h-full object-cover"
+          />
         ) : (
-          // Avatar placeholder
+          // Avatar placeholder when video is off
           <div className="w-full h-full bg-gray-700 flex items-center justify-center">
             <div className="text-center">
               <div className="bg-gray-600 p-4 rounded-full w-16 h-16 mx-auto mb-2 flex items-center justify-center">
