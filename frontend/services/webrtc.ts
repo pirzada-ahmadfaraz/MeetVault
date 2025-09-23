@@ -20,7 +20,7 @@ export interface Participant {
   isVideoEnabled: boolean
   isAudioEnabled: boolean
   isScreenSharing: boolean
-  stream?: MediaStream
+  stream?: MediaStream | null
   screenStream?: MediaStream
 }
 

@@ -28,7 +28,7 @@ export default function VideoGrid({
       isVideoEnabled,
       isAudioEnabled: true, // This should come from WebRTC state
       isScreenSharing: false,
-      stream: localStream
+      stream: localStream || undefined
     }] : []),
     ...participants
   ]
