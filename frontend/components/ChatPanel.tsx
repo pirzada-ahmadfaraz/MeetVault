@@ -23,7 +23,7 @@ export default function ChatPanel({ meetingId }: ChatPanelProps) {
   const [error, setError] = useState('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     loadMessages()
