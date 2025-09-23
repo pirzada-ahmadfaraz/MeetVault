@@ -1,0 +1,417 @@
+const { Server } = require('socket.io');
+const JWTUtils = require('../utils/jwt');
+const { User, Meeting, ChatMessage } = require('../models');
+
+class SocketService {
+  constructor(server) {
+    this.io = new Server(server, {
+      cors: {
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+        methods: ['GET', 'POST'],
+        credentials: true
+      }
+    });
+
+    this.setupMiddleware();
+    this.setupEventHandlers();
+  }
+
+  setupMiddleware() {
+    // Authentication middleware for socket connections
+    this.io.use(async (socket, next) => {
+      try {
+        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+        
+        if (!token) {
+          return next(new Error('Authentication token missing'));
+        }
+
+        const decoded = JWTUtils.verifyToken(token);
+        const user = await User.findById(decoded.userId);
+
+        if (!user || !user.isActive) {
+          return next(new Error('User not found or inactive'));
+        }
+
+        socket.userId = user._id.toString();
+        socket.user = user;
+        next();
+      } catch (error) {
+        next(new Error('Authentication failed'));
+      }
+    });
+  }
+
+  setupEventHandlers() {
+    this.io.on('connection', (socket) => {
+      console.log(`User ${socket.user.username} connected with socket ID: ${socket.id}`);
+
+      // Meeting-related events
+      socket.on('join-meeting', async (data) => {
+        await this.handleJoinMeeting(socket, data);
+      });
+
+      socket.on('leave-meeting', async (data) => {
+        await this.handleLeaveMeeting(socket, data);
+      });
+
+      // WebRTC signaling events
+      socket.on('offer', (data) => {
+        this.handleWebRTCSignaling(socket, 'offer', data);
+      });
+
+      socket.on('answer', (data) => {
+        this.handleWebRTCSignaling(socket, 'answer', data);
+      });
+
+      socket.on('ice-candidate', (data) => {
+        this.handleWebRTCSignaling(socket, 'ice-candidate', data);
+      });
+
+      // Media control events
+      socket.on('toggle-video', async (data) => {
+        await this.handleToggleVideo(socket, data);
+      });
+
+      socket.on('toggle-audio', async (data) => {
+        await this.handleToggleAudio(socket, data);
+      });
+
+      socket.on('start-screen-share', async (data) => {
+        await this.handleStartScreenShare(socket, data);
+      });
+
+      socket.on('stop-screen-share', async (data) => {
+        await this.handleStopScreenShare(socket, data);
+      });
+
+      // Chat events
+      socket.on('send-message', async (data) => {
+        await this.handleSendMessage(socket, data);
+      });
+
+      socket.on('typing-start', (data) => {
+        this.handleTypingStart(socket, data);
+      });
+
+      socket.on('typing-stop', (data) => {
+        this.handleTypingStop(socket, data);
+      });
+
+      // Connection events
+      socket.on('disconnect', () => {
+        this.handleDisconnect(socket);
+      });
+    });
+  }
+
+  async handleJoinMeeting(socket, data) {
+    try {
+      const { meetingId } = data;
+      
+      const meeting = await Meeting.findOne({ meetingId })
+        .populate('host', 'username firstName lastName')
+        .populate('participants.user', 'username firstName lastName');
+
+      if (!meeting) {
+        socket.emit('error', { message: 'Meeting not found' });
+        return;
+      }
+
+      // Check if user is authorized to join
+      const isHost = meeting.host._id.toString() === socket.userId;
+      const isParticipant = meeting.participants.some(
+        p => p.user._id.toString() === socket.userId && !p.leftAt
+      );
+
+      if (!isHost && !isParticipant) {
+        socket.emit('error', { message: 'Not authorized to join this meeting' });
+        return;
+      }
+
+      // Join the meeting room
+      socket.join(meetingId);
+      socket.currentMeeting = meetingId;
+
+      // Notify other participants
+      socket.to(meetingId).emit('user-joined', {
+        userId: socket.userId,
+        user: {
+          username: socket.user.username,
+          firstName: socket.user.firstName,
+          lastName: socket.user.lastName
+        }
+      });
+
+      // Send current participants to the new user
+      const currentParticipants = meeting.participants
+        .filter(p => !p.leftAt)
+        .map(p => ({
+          userId: p.user._id,
+          user: p.user,
+          isVideoEnabled: p.isVideoEnabled,
+          isAudioEnabled: p.isAudioEnabled,
+          isScreenSharing: p.isScreenSharing
+        }));
+
+      socket.emit('meeting-joined', {
+        meeting: meeting,
+        participants: currentParticipants
+      });
+
+      console.log(`User ${socket.user.username} joined meeting ${meetingId}`);
+    } catch (error) {
+      console.error('Join meeting error:', error);
+      socket.emit('error', { message: 'Failed to join meeting' });
+    }
+  }
+
+  async handleLeaveMeeting(socket, data) {
+    try {
+      const { meetingId } = data;
+      
+      socket.leave(meetingId);
+      
+      // Notify other participants
+      socket.to(meetingId).emit('user-left', {
+        userId: socket.userId,
+        user: {
+          username: socket.user.username,
+          firstName: socket.user.firstName,
+          lastName: socket.user.lastName
+        }
+      });
+
+      socket.currentMeeting = null;
+      console.log(`User ${socket.user.username} left meeting ${meetingId}`);
+    } catch (error) {
+      console.error('Leave meeting error:', error);
+    }
+  }
+
+  handleWebRTCSignaling(socket, eventType, data) {
+    const { targetUserId, ...signalData } = data;
+    
+    // Forward signaling data to specific user
+    socket.to(socket.currentMeeting).emit(eventType, {
+      fromUserId: socket.userId,
+      ...signalData
+    });
+  }
+
+  async handleToggleVideo(socket, data) {
+    try {
+      const { meetingId, isVideoEnabled } = data;
+      
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) return;
+
+      // Update participant video status
+      const participant = meeting.participants.find(
+        p => p.user.toString() === socket.userId && !p.leftAt
+      );
+
+      if (participant) {
+        participant.isVideoEnabled = isVideoEnabled;
+        await meeting.save();
+
+        // Notify other participants
+        socket.to(meetingId).emit('participant-video-toggled', {
+          userId: socket.userId,
+          isVideoEnabled
+        });
+      }
+    } catch (error) {
+      console.error('Toggle video error:', error);
+    }
+  }
+
+  async handleToggleAudio(socket, data) {
+    try {
+      const { meetingId, isAudioEnabled } = data;
+      
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) return;
+
+      // Update participant audio status
+      const participant = meeting.participants.find(
+        p => p.user.toString() === socket.userId && !p.leftAt
+      );
+
+      if (participant) {
+        participant.isAudioEnabled = isAudioEnabled;
+        await meeting.save();
+
+        // Notify other participants
+        socket.to(meetingId).emit('participant-audio-toggled', {
+          userId: socket.userId,
+          isAudioEnabled
+        });
+      }
+    } catch (error) {
+      console.error('Toggle audio error:', error);
+    }
+  }
+
+  async handleStartScreenShare(socket, data) {
+    try {
+      const { meetingId } = data;
+      
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) return;
+
+      if (!meeting.settings.allowScreenShare) {
+        socket.emit('error', { message: 'Screen sharing is not allowed in this meeting' });
+        return;
+      }
+
+      // Update participant screen sharing status
+      const participant = meeting.participants.find(
+        p => p.user.toString() === socket.userId && !p.leftAt
+      );
+
+      if (participant) {
+        participant.isScreenSharing = true;
+        await meeting.save();
+
+        // Notify other participants
+        socket.to(meetingId).emit('participant-started-screen-share', {
+          userId: socket.userId,
+          user: {
+            username: socket.user.username,
+            firstName: socket.user.firstName,
+            lastName: socket.user.lastName
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Start screen share error:', error);
+    }
+  }
+
+  async handleStopScreenShare(socket, data) {
+    try {
+      const { meetingId } = data;
+      
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) return;
+
+      // Update participant screen sharing status
+      const participant = meeting.participants.find(
+        p => p.user.toString() === socket.userId && !p.leftAt
+      );
+
+      if (participant) {
+        participant.isScreenSharing = false;
+        await meeting.save();
+
+        // Notify other participants
+        socket.to(meetingId).emit('participant-stopped-screen-share', {
+          userId: socket.userId
+        });
+      }
+    } catch (error) {
+      console.error('Stop screen share error:', error);
+    }
+  }
+
+  async handleSendMessage(socket, data) {
+    try {
+      const { meetingId, content, replyTo } = data;
+      
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) {
+        socket.emit('error', { message: 'Meeting not found' });
+        return;
+      }
+
+      if (!meeting.settings.allowChat) {
+        socket.emit('error', { message: 'Chat is disabled for this meeting' });
+        return;
+      }
+
+      // Create new chat message
+      const message = new ChatMessage({
+        meeting: meeting._id,
+        sender: socket.userId,
+        content,
+        replyTo: replyTo || null
+      });
+
+      await message.save();
+
+      const populatedMessage = await ChatMessage.findById(message._id)
+        .populate('sender', 'username firstName lastName')
+        .populate('replyTo', 'content sender createdAt')
+        .populate('replyTo.sender', 'username firstName lastName');
+
+      // Broadcast message to all participants
+      this.io.to(meetingId).emit('new-message', populatedMessage);
+    } catch (error) {
+      console.error('Send message error:', error);
+      socket.emit('error', { message: 'Failed to send message' });
+    }
+  }
+
+  handleTypingStart(socket, data) {
+    const { meetingId } = data;
+    socket.to(meetingId).emit('user-typing-start', {
+      userId: socket.userId,
+      user: {
+        username: socket.user.username,
+        firstName: socket.user.firstName,
+        lastName: socket.user.lastName
+      }
+    });
+  }
+
+  handleTypingStop(socket, data) {
+    const { meetingId } = data;
+    socket.to(meetingId).emit('user-typing-stop', {
+      userId: socket.userId
+    });
+  }
+
+  handleDisconnect(socket) {
+    console.log(`User ${socket.user.username} disconnected`);
+    
+    if (socket.currentMeeting) {
+      // Notify other participants that user disconnected
+      socket.to(socket.currentMeeting).emit('user-disconnected', {
+        userId: socket.userId,
+        user: {
+          username: socket.user.username,
+          firstName: socket.user.firstName,
+          lastName: socket.user.lastName
+        }
+      });
+    }
+  }
+
+  // Method to get connected users in a meeting
+  getConnectedUsers(meetingId) {
+    const room = this.io.sockets.adapter.rooms.get(meetingId);
+    return room ? room.size : 0;
+  }
+
+  // Method to send notification to specific user
+  sendToUser(userId, event, data) {
+    const userSockets = this.getUserSockets(userId);
+    userSockets.forEach(socket => {
+      socket.emit(event, data);
+    });
+  }
+
+  // Method to get all socket instances for a user
+  getUserSockets(userId) {
+    const userSockets = [];
+    this.io.sockets.sockets.forEach(socket => {
+      if (socket.userId === userId) {
+        userSockets.push(socket);
+      }
+    });
+    return userSockets;
+  }
+}
+
+module.exports = SocketService;
