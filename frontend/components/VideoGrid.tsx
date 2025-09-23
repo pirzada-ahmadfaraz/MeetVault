@@ -19,7 +19,7 @@ export default function VideoGrid({
   currentUser
 }: VideoGridProps) {
   // Add current user as a participant for display
-  const allParticipants = [
+  const allParticipants: Participant[] = [
     ...(currentUser ? [{
       id: 'local',
       userId: currentUser._id,
@@ -28,8 +28,8 @@ export default function VideoGrid({
       isVideoEnabled,
       isAudioEnabled: true, // This should come from WebRTC state
       isScreenSharing: false,
-      stream: localStream || undefined
-    }] : []),
+      stream: localStream
+    } as Participant] : []),
     ...participants
   ]
 
