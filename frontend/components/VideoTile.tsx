@@ -22,6 +22,7 @@ export default function VideoTile({
   showControls = true
 }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const { user, isVideoEnabled, isAudioEnabled, isScreenSharing, isHost } = participant
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -31,7 +32,6 @@ export default function VideoTile({
       console.log('VideoTile: No stream for participant:', participant.id, { hasVideoRef: !!videoRef.current, hasStream: !!stream, isVideoEnabled })
     }
   }, [stream, participant.id, isVideoEnabled])
-  const { user, isVideoEnabled, isAudioEnabled, isScreenSharing, isHost } = participant
 
   return (
     <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isSmall ? 'h-24' : 'h-full min-h-[200px]'}`}>
