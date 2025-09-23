@@ -8,6 +8,9 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import Navbar from '@/components/Navbar'
 import CreateMeetingModal from '@/components/CreateMeetingModal'
 import MeetingCard from '@/components/MeetingCard'
+import MeetingDetailsModal from '@/components/MeetingDetailsModal'
+import MeetingSuccessModal from '@/components/MeetingSuccessModal'
+import JoinMeetingModal from '@/components/JoinMeetingModal'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { 
   PlusIcon, 
@@ -22,6 +25,10 @@ export default function DashboardPage() {
   const [activeMeetings, setActiveMeetings] = useState<Meeting[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false)
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -56,11 +63,59 @@ export default function DashboardPage() {
 
   const handleMeetingCreated = (newMeeting: Meeting) => {
     setMeetings(prev => [newMeeting, ...prev.slice(0, 5)])
+    setSelectedMeeting(newMeeting)
     setIsCreateModalOpen(false)
+    setIsSuccessModalOpen(true)
+  }
+
+  const handleViewDetails = (meeting: Meeting) => {
+    setSelectedMeeting(meeting)
+    setIsDetailsModalOpen(true)
+  }
+
+  const handleStartMeeting = async (meetingId: string) => {
+    try {
+      setIsSuccessModalOpen(false)
+
+      // Start the meeting first
+      const response = await meetingAPI.startMeeting(meetingId)
+
+      if (response.success) {
+        // Update the meeting in our state
+        setMeetings(prev => prev.map(m =>
+          m.meetingId === meetingId ? response.data : m
+        ))
+
+        // Then join the meeting
+        handleJoinMeeting(meetingId)
+      } else {
+        setError(response.message)
+      }
+    } catch (error: any) {
+      console.error('Error starting meeting:', error)
+      setError('Failed to start meeting. Please try again.')
+    }
   }
 
   const handleJoinMeeting = (meetingId: string) => {
     window.open(`/meeting/${meetingId}`, '_blank')
+  }
+
+  const handleJoinByMeetingId = async (meetingId: string, password?: string) => {
+    try {
+      // First try to join the meeting via API to validate credentials
+      const response = await meetingAPI.joinMeeting(meetingId, password ? { password } : {})
+
+      if (response.success) {
+        // If successful, redirect to the meeting room
+        window.open(`/meeting/${meetingId}`, '_blank')
+      } else {
+        throw new Error(response.message)
+      }
+    } catch (error: any) {
+      console.error('Error joining meeting:', error)
+      throw error // Re-throw to let the modal handle the error
+    }
   }
 
   return (
@@ -115,7 +170,10 @@ export default function DashboardPage() {
               <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
                 Enter a meeting ID to join an existing meeting.
               </p>
-              <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+              <button
+                onClick={() => setIsJoinModalOpen(true)}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+              >
                 Join Meeting
               </button>
             </div>
@@ -157,7 +215,10 @@ export default function DashboardPage() {
                   <MeetingCard
                     key={meeting._id}
                     meeting={meeting}
+                    currentUserId={user?._id}
                     onJoin={handleJoinMeeting}
+                    onStart={handleStartMeeting}
+                    onViewDetails={handleViewDetails}
                     showJoinButton={true}
                     isActive={true}
                   />
@@ -190,7 +251,10 @@ export default function DashboardPage() {
                   <MeetingCard
                     key={meeting._id}
                     meeting={meeting}
+                    currentUserId={user?._id}
                     onJoin={handleJoinMeeting}
+                    onStart={handleStartMeeting}
+                    onViewDetails={handleViewDetails}
                     showJoinButton={meeting.isActive}
                   />
                 ))}
@@ -218,6 +282,29 @@ export default function DashboardPage() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onMeetingCreated={handleMeetingCreated}
+        />
+
+        {/* Meeting Details Modal */}
+        <MeetingDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          meeting={selectedMeeting}
+          onJoin={handleJoinMeeting}
+        />
+
+        {/* Meeting Success Modal */}
+        <MeetingSuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => setIsSuccessModalOpen(false)}
+          meeting={selectedMeeting}
+          onJoinNow={handleStartMeeting}
+        />
+
+        {/* Join Meeting Modal */}
+        <JoinMeetingModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          onJoin={handleJoinByMeetingId}
         />
       </div>
     </ProtectedRoute>

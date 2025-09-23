@@ -1,5 +1,5 @@
 import { Meeting } from '@/types'
-import { 
+import {
   CalendarIcon,
   ClockIcon,
   UserGroupIcon,
@@ -9,16 +9,22 @@ import {
 
 interface MeetingCardProps {
   meeting: Meeting
+  currentUserId?: string
   onJoin: (meetingId: string) => void
+  onStart?: (meetingId: string) => void
+  onViewDetails?: (meeting: Meeting) => void
   showJoinButton?: boolean
   isActive?: boolean
 }
 
-export default function MeetingCard({ 
-  meeting, 
-  onJoin, 
+export default function MeetingCard({
+  meeting,
+  currentUserId,
+  onJoin,
+  onStart,
+  onViewDetails,
   showJoinButton = false,
-  isActive = false 
+  isActive = false
 }: MeetingCardProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No date set'
@@ -44,6 +50,9 @@ export default function MeetingCard({
   }
 
   const status = getMeetingStatus()
+  const isHost = currentUserId && meeting.host._id === currentUserId
+  const canStart = isHost && !meeting.isActive && !meeting.endTime
+  const canJoin = meeting.isActive && !meeting.endTime
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md dark:hover:shadow-lg transition-all duration-300 ${isActive ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}`}>
@@ -111,7 +120,17 @@ export default function MeetingCard({
 
       {/* Actions */}
       <div className="flex space-x-2">
-        {showJoinButton && (
+        {canStart && onStart && (
+          <button
+            onClick={() => onStart(meeting.meetingId)}
+            className="flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
+          >
+            <PlayIcon className="h-4 w-4 mr-2" />
+            Start Meeting
+          </button>
+        )}
+
+        {canJoin && showJoinButton && (
           <button
             onClick={() => onJoin(meeting.meetingId)}
             className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -128,13 +147,22 @@ export default function MeetingCard({
             ) : (
               <>
                 <VideoCameraIcon className="h-4 w-4 mr-2" />
-                Join
+                Join Meeting
               </>
             )}
           </button>
         )}
-        
-        <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+
+        {!canStart && !canJoin && !meeting.endTime && (
+          <div className="flex-1 text-center py-2 px-4 text-sm text-gray-500 dark:text-gray-400">
+            {isHost ? 'Ready to start' : 'Not started yet'}
+          </div>
+        )}
+
+        <button
+          onClick={() => onViewDetails?.(meeting)}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
           Details
         </button>
       </div>

@@ -7,7 +7,7 @@ import socketService from '@/lib/socket'
 import VideoGrid from './VideoGrid'
 import ChatPanel from './ChatPanel'
 import MeetingControls from './MeetingControls'
-import JoinMeetingModal from './JoinMeetingModal'
+import MeetingJoinPrompt from './MeetingJoinPrompt'
 import {
   ChatBubbleLeftRightIcon,
   XMarkIcon
@@ -106,7 +106,7 @@ export default function MeetingRoom({
 
   if (showJoinModal) {
     return (
-      <JoinMeetingModal
+      <MeetingJoinPrompt
         meeting={meeting}
         onJoin={handleJoinWithPassword}
         onCancel={() => window.history.back()}

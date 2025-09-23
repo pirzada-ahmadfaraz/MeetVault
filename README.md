@@ -1,6 +1,6 @@
-# Video Conference Backend API
+# 🎥 Video Conference App
 
-A complete backend solution for a video conferencing web application, built with Node.js, Express, Socket.IO, and MongoDB. This backend provides authentication, meeting management, real-time signaling for WebRTC, and chat functionality.
+A full-stack video conferencing application built with Next.js, Node.js, MongoDB, and WebRTC. This includes both backend API and frontend React application.
 
 ## 🚀 Features
 
@@ -151,6 +151,27 @@ You should see:
 ║  Ready for frontend connections! 🎉             ║
 ╚══════════════════════════════════════════════════╝
 ```
+
+## 🌐 Deployment
+
+### Quick Deploy (Free Tier)
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+**Architecture:**
+```
+Frontend (Vercel) ↔ Backend (Railway) ↔ Database (MongoDB Atlas)
+```
+
+**Quick Deploy Steps:**
+1. **Database:** MongoDB Atlas (Free 512MB)
+2. **Backend:** Railway (Free $5 credit)
+3. **Frontend:** Vercel (Free tier)
+
+**Deploy Links:**
+- [Deploy Frontend to Vercel](https://vercel.com/) → Set root directory to `frontend`
+- [Deploy Backend to Railway](https://railway.app/) → Set root directory to `/`
+- [Setup Database on MongoDB Atlas](https://cloud.mongodb.com/)
 
 ## 📚 API Documentation
 
