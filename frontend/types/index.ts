@@ -5,6 +5,7 @@ export interface User {
   firstName: string
   lastName: string
   fullName?: string
+  profilePicture?: string
   isActive: boolean
   lastLogin: string | null
   createdAt: string
