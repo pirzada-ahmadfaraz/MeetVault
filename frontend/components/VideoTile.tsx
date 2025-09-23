@@ -34,7 +34,7 @@ export default function VideoTile({
   }, [stream, participant.id, isVideoEnabled])
 
   return (
-    <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isSmall ? 'h-24' : 'h-full min-h-[200px]'}`}>
+    <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isSmall ? 'h-24' : 'h-full min-h-[200px] max-h-[600px]'}`}>
       {/* Video content */}
       <div className="w-full h-full flex items-center justify-center">
         {isVideoEnabled && stream ? (
@@ -44,7 +44,7 @@ export default function VideoTile({
             autoPlay
             playsInline
             muted={participant.id === 'local'} // Mute local video to prevent echo
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain bg-gray-900"
           />
         ) : (
           // Avatar placeholder when video is off

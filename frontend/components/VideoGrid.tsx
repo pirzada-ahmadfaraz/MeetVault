@@ -90,7 +90,7 @@ export default function VideoGrid({
 
   // Regular grid layout
   return (
-    <div className={`h-full grid gap-4 ${getGridCols(allParticipants.length)} ${getGridRows(allParticipants.length)}`}>
+    <div className={`h-full max-h-full grid gap-4 ${getGridCols(allParticipants.length)} ${getGridRows(allParticipants.length)} items-center justify-items-center`}>
       {allParticipants.map((participant) => (
         <VideoTile
           key={participant.id}

@@ -198,7 +198,7 @@ export default function MeetingRoom({
       <div className="flex-1 flex overflow-hidden">
         {/* Video Area */}
         <div className={`flex-1 flex flex-col ${isChatOpen ? 'mr-80' : ''}`}>
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 min-h-0">
             <VideoGrid
               participants={participants}
               localStream={localStream}
@@ -210,7 +210,7 @@ export default function MeetingRoom({
           </div>
 
           {/* Meeting Controls */}
-          <div className="p-4">
+          <div className="p-4 flex-shrink-0">
             <MeetingControls
               isVideoEnabled={isVideoEnabled}
               isAudioEnabled={isAudioEnabled}
