@@ -110,7 +110,10 @@ export default function MeetingRoom({
     const success = await webRTCService.current.joinMeeting(meeting.meetingId, callbacks)
     if (success) {
       const stream = webRTCService.current.getLocalStream()
+      console.log('MeetingRoom: Got local stream:', stream)
       setLocalStream(stream)
+    } else {
+      console.error('MeetingRoom: Failed to join meeting with WebRTC')
     }
   }
 

@@ -26,8 +26,11 @@ export default function VideoTile({
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream
+      console.log('VideoTile: Setting video stream for participant:', participant.id, stream)
+    } else {
+      console.log('VideoTile: No stream for participant:', participant.id, { hasVideoRef: !!videoRef.current, hasStream: !!stream, isVideoEnabled })
     }
-  }, [stream])
+  }, [stream, participant.id, isVideoEnabled])
   const { user, isVideoEnabled, isAudioEnabled, isScreenSharing, isHost } = participant
 
   return (

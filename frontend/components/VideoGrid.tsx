@@ -32,6 +32,10 @@ export default function VideoGrid({
     }] : []),
     ...participants
   ]
+
+  console.log('VideoGrid: All participants:', allParticipants)
+  console.log('VideoGrid: Local stream:', localStream)
+  console.log('VideoGrid: Participant streams:', participantStreams)
   
   // Calculate grid layout based on number of participants
   const getGridCols = (count: number) => {
