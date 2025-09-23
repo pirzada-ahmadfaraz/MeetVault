@@ -45,7 +45,10 @@ export interface MeetingSettings {
   allowChat: boolean
   allowScreenShare: boolean
   requirePassword: boolean
+  // Present in responses as a flag; backend strips actual password
   hasPassword?: boolean
+  // Optional when creating/updating a meeting if requirePassword is true
+  password?: string
   waitingRoom: boolean
   muteParticipantsOnEntry: boolean
 }
