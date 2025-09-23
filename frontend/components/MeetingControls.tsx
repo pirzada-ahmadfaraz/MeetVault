@@ -1,14 +1,14 @@
 'use client'
 
-import { 
+import {
   MicrophoneIcon,
-  MicrophoneSlashIcon,
   VideoCameraIcon,
   VideoCameraSlashIcon,
   ComputerDesktopIcon,
   PhoneXMarkIcon,
   Cog6ToothIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 
 interface MeetingControlsProps {
@@ -49,7 +49,10 @@ export default function MeetingControls({
         {isAudioEnabled ? (
           <MicrophoneIcon className="h-6 w-6" />
         ) : (
-          <MicrophoneSlashIcon className="h-6 w-6" />
+          <div className="relative">
+            <MicrophoneIcon className="h-6 w-6" />
+            <XMarkIcon className="h-4 w-4 absolute -top-1 -right-1 text-red-400" />
+          </div>
         )}
       </button>
 

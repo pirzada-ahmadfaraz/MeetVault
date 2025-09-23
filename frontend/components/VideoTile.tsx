@@ -1,10 +1,10 @@
 import { Participant } from '@/types'
-import { 
+import {
   MicrophoneIcon,
-  MicrophoneSlashIcon,
   VideoCameraIcon,
   VideoCameraSlashIcon,
-  UserIcon
+  UserIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 
 interface VideoTileProps {
@@ -87,7 +87,10 @@ export default function VideoTile({
                   {isAudioEnabled ? (
                     <MicrophoneIcon className="h-3 w-3 text-white" />
                   ) : (
-                    <MicrophoneSlashIcon className="h-3 w-3 text-white" />
+                    <div className="relative">
+                      <MicrophoneIcon className="h-3 w-3 text-white" />
+                      <XMarkIcon className="h-2 w-2 absolute -top-0.5 -right-0.5 text-white" />
+                    </div>
                   )}
                 </div>
 
