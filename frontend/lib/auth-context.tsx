@@ -19,6 +19,7 @@ interface AuthContextType {
   }) => Promise<{ success: boolean; message: string }>
   logout: () => void
   refreshAuth: () => Promise<void>
+  updateUser: (nextUser: User) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -182,13 +183,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updateUser = (nextUser: User) => {
+    setUser(nextUser)
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
     login,
     register,
     logout,
-    refreshAuth
+    refreshAuth,
+    updateUser
   }
 
   return (
