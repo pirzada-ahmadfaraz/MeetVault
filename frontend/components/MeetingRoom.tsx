@@ -48,10 +48,12 @@ export default function MeetingRoom({
 
   const isHost = meeting.host._id === user?._id
 
-  // Debug effect to track participant changes
+  // Debug effect to track participant changes (only when they actually change)
   useEffect(() => {
-    console.log('MeetingRoom: Participants state changed:', participants.length, participants)
-  }, [participants])
+    if (participants.length > 0) {
+      console.log('🔗 MeetingRoom: Connected participants:', participants.length, participants.map(p => p.user.firstName))
+    }
+  }, [participants.length])
 
   useEffect(() => {
     setShowJoinModal(!hasJoined)
@@ -102,8 +104,12 @@ export default function MeetingRoom({
         })
       },
       onParticipantStreamUpdated: (participantId: string, stream: MediaStream) => {
-        console.log('Participant stream updated:', participantId)
-        setParticipantStreams(prev => new Map(prev.set(participantId, stream)))
+        console.log('🎥 MeetingRoom: Received video stream from participant:', participantId)
+        setParticipantStreams(prev => {
+          const updated = new Map(prev.set(participantId, stream))
+          console.log('📊 MeetingRoom: Total streams now:', updated.size)
+          return updated
+        })
       },
       onParticipantScreenShareStarted: (participantId: string, stream: MediaStream) => {
         console.log('Screen share started:', participantId)

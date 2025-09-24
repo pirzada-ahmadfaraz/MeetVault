@@ -72,29 +72,28 @@ export class WebRTCService {
     })
 
     this.socket.on('connect', () => {
-      console.log('Connected to signaling server')
+      console.log('📡 WebRTC: Connected to signaling server')
     })
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from signaling server')
+      console.log('📡 WebRTC: Disconnected from signaling server')
     })
 
     this.socket.on('user-joined', (data) => {
-      console.log('User joined:', data)
+      console.log('👤 WebRTC: User joined:', data.user?.firstName || data.userId)
       this.handleUserJoined(data)
     })
 
     this.socket.on('user-left', (data) => {
-      console.log('User left:', data)
+      console.log('👋 WebRTC: User left:', data.userId)
       this.handleUserLeft(data.userId)
     })
 
     this.socket.on('meeting-joined', (data: any) => {
-      console.log('Meeting joined successfully:', data)
+      console.log('🎉 WebRTC: Meeting joined! Found', data.participants?.length || 0, 'existing participants')
       // Handle existing participants
       if (data.participants && data.participants.length > 0) {
-        console.log('Adding existing participants:', data.participants)
-        data.participants.forEach(async (participant: any) => {
+        data.participants.forEach((participant: any) => {
           const formattedParticipant = {
             id: participant.userId.toString(),
             userId: participant.userId.toString(),
@@ -104,14 +103,14 @@ export class WebRTCService {
             isAudioEnabled: participant.isAudioEnabled,
             isScreenSharing: participant.isScreenSharing
           }
-          console.log('Adding participant:', formattedParticipant)
+          console.log('➕ WebRTC: Adding existing participant:', participant.user.firstName)
           this.callbacks?.onParticipantJoined(formattedParticipant)
 
-          // Create peer connection for existing participant
-          await this.createPeerConnectionForExistingParticipant(participant.userId)
+          // Don't create peer connections here - let the natural offer/answer flow handle it
+          // The existing participants will receive a 'user-joined' event and initiate offers
         })
       } else {
-        console.log('No existing participants found')
+        console.log('✨ WebRTC: First participant in meeting')
       }
     })
 
@@ -121,17 +120,17 @@ export class WebRTCService {
     })
 
     this.socket.on('offer', (data) => {
-      console.log('Received offer:', data)
+      console.log('📞 WebRTC: Received offer from:', data.fromUserId)
       this.handleOffer(data)
     })
 
     this.socket.on('answer', (data) => {
-      console.log('Received answer:', data)
+      console.log('✅ WebRTC: Received answer from:', data.fromUserId)
       this.handleAnswer(data)
     })
 
     this.socket.on('ice-candidate', (data) => {
-      console.log('Received ICE candidate:', data)
+      console.log('🧊 WebRTC: Received ICE candidate from:', data.fromUserId)
       this.handleIceCandidate(data)
     })
 
@@ -294,50 +293,60 @@ export class WebRTCService {
   }
 
   private async handleUserJoined(data: any) {
-    console.log('handleUserJoined called with data:', data)
     const { userId, user } = data
+    console.log('🤝 WebRTC: Setting up connection with', user.firstName)
 
-    const participant: Participant = {
-      id: userId,
-      userId: userId,
-      user: {
-        _id: userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        username: user.username,
-        email: user.email || ''
-      },
-      isHost: false,
-      isVideoEnabled: true,
-      isAudioEnabled: true,
-      isScreenSharing: false
-    }
+    try {
+      // Check if we already have a peer connection (avoid duplicates)
+      if (this.peerConnections.has(userId)) {
+        console.log('⚠️ WebRTC: Peer connection already exists for:', user.firstName)
+        return
+      }
 
-    console.log('Creating participant:', participant)
+      const participant: Participant = {
+        id: userId,
+        userId: userId,
+        user: {
+          _id: userId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          email: user.email || ''
+        },
+        isHost: false,
+        isVideoEnabled: true,
+        isAudioEnabled: true,
+        isScreenSharing: false
+      }
 
-    // Create peer connection for this participant
-    const peerConnection = this.createPeerConnection(userId)
-    this.peerConnections.set(userId, peerConnection)
+      // Create peer connection for this participant
+      console.log('🔗 WebRTC: Creating peer connection for new participant:', user.firstName)
+      const peerConnection = this.createPeerConnection(userId)
+      this.peerConnections.set(userId, peerConnection)
 
-    // Add local stream to peer connection
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, this.localStream!)
+      // Add local stream to peer connection
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, this.localStream!)
+        })
+        console.log('📹 WebRTC: Added local stream tracks to peer connection')
+      }
+
+      // Create offer for new participant
+      const offer = await peerConnection.createOffer()
+      await peerConnection.setLocalDescription(offer)
+
+      console.log('📤 WebRTC: Sending offer to', user.firstName)
+      this.socket?.emit('offer', {
+        meetingId: this.meetingId,
+        targetUserId: userId,
+        offer: offer
       })
+
+      this.callbacks?.onParticipantJoined(participant)
+    } catch (error) {
+      console.error('❌ WebRTC: Error handling user joined:', user.firstName, error)
     }
-
-    // Create offer for new participant
-    const offer = await peerConnection.createOffer()
-    await peerConnection.setLocalDescription(offer)
-
-    this.socket?.emit('offer', {
-      meetingId: this.meetingId,
-      targetUserId: userId,
-      offer: offer
-    })
-
-    console.log('Calling onParticipantJoined callback')
-    this.callbacks?.onParticipantJoined(participant)
   }
 
   private handleUserLeft(participantId: string) {
@@ -353,43 +362,71 @@ export class WebRTCService {
   private async handleOffer(data: any) {
     const { fromUserId, offer } = data
 
-    const peerConnection = this.createPeerConnection(fromUserId)
-    this.peerConnections.set(fromUserId, peerConnection)
+    try {
+      // Check if we already have a peer connection (avoid duplicates)
+      if (this.peerConnections.has(fromUserId)) {
+        console.log('⚠️ WebRTC: Peer connection already exists for offer from:', fromUserId)
+        return
+      }
 
-    // Add local stream to peer connection
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, this.localStream!)
+      console.log('🤝 WebRTC: Creating peer connection to handle offer from:', fromUserId)
+      const peerConnection = this.createPeerConnection(fromUserId)
+      this.peerConnections.set(fromUserId, peerConnection)
+
+      // Add local stream to peer connection
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, this.localStream!)
+        })
+        console.log('📹 WebRTC: Added local stream tracks to peer connection')
+      }
+
+      await peerConnection.setRemoteDescription(offer)
+      console.log('📥 WebRTC: Set remote description from offer')
+
+      const answer = await peerConnection.createAnswer()
+      await peerConnection.setLocalDescription(answer)
+
+      console.log('📤 WebRTC: Sending answer back to:', fromUserId)
+      this.socket?.emit('answer', {
+        meetingId: this.meetingId,
+        targetUserId: fromUserId,
+        answer: answer
       })
+    } catch (error) {
+      console.error('❌ WebRTC: Error handling offer from:', fromUserId, error)
     }
-
-    await peerConnection.setRemoteDescription(offer)
-
-    const answer = await peerConnection.createAnswer()
-    await peerConnection.setLocalDescription(answer)
-
-    this.socket?.emit('answer', {
-      meetingId: this.meetingId,
-      targetUserId: fromUserId,
-      answer: answer
-    })
   }
 
   private async handleAnswer(data: any) {
     const { fromUserId, answer } = data
 
-    const peerConnection = this.peerConnections.get(fromUserId)
-    if (peerConnection) {
-      await peerConnection.setRemoteDescription(answer)
+    try {
+      const peerConnection = this.peerConnections.get(fromUserId)
+      if (peerConnection) {
+        await peerConnection.setRemoteDescription(answer)
+        console.log('📥 WebRTC: Set remote description from answer:', fromUserId)
+      } else {
+        console.error('❌ WebRTC: No peer connection found for answer from:', fromUserId)
+      }
+    } catch (error) {
+      console.error('❌ WebRTC: Error handling answer from:', fromUserId, error)
     }
   }
 
   private async handleIceCandidate(data: any) {
     const { fromUserId, candidate } = data
 
-    const peerConnection = this.peerConnections.get(fromUserId)
-    if (peerConnection && candidate) {
-      await peerConnection.addIceCandidate(candidate)
+    try {
+      const peerConnection = this.peerConnections.get(fromUserId)
+      if (peerConnection && candidate) {
+        await peerConnection.addIceCandidate(candidate)
+        console.log('🧊 WebRTC: Added ICE candidate from:', fromUserId)
+      } else if (!peerConnection) {
+        console.error('❌ WebRTC: No peer connection found for ICE candidate from:', fromUserId)
+      }
+    } catch (error) {
+      console.error('❌ WebRTC: Error adding ICE candidate from:', fromUserId, error)
     }
   }
 
@@ -410,12 +447,23 @@ export class WebRTCService {
 
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams
-      console.log('Received remote stream:', remoteStream)
+      console.log('🎥 WebRTC: Received video stream from participant:', participantId)
+      console.log('Stream details:', {
+        id: remoteStream.id,
+        videoTracks: remoteStream.getVideoTracks().length,
+        audioTracks: remoteStream.getAudioTracks().length,
+        active: remoteStream.active
+      })
       this.callbacks?.onParticipantStreamUpdated(participantId, remoteStream)
     }
 
     peerConnection.onconnectionstatechange = () => {
-      console.log('Connection state:', peerConnection.connectionState)
+      console.log('🔗 WebRTC: Connection state changed:', participantId, '->', peerConnection.connectionState)
+      if (peerConnection.connectionState === 'connected') {
+        console.log('✅ WebRTC: Successfully connected to participant:', participantId)
+      } else if (peerConnection.connectionState === 'failed') {
+        console.error('❌ WebRTC: Connection failed to participant:', participantId)
+      }
     }
 
     return peerConnection
@@ -448,39 +496,6 @@ export class WebRTCService {
     return { ...this.mediaControls }
   }
 
-  private async createPeerConnectionForExistingParticipant(userId: string) {
-    console.log('Creating peer connection for existing participant:', userId)
-
-    if (this.peerConnections.has(userId)) {
-      console.log('Peer connection already exists for:', userId)
-      return
-    }
-
-    const peerConnection = this.createPeerConnection(userId)
-    this.peerConnections.set(userId, peerConnection)
-
-    // Add local stream to peer connection
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, this.localStream!)
-      })
-    }
-
-    // Create and send an offer to the existing participant
-    try {
-      const offer = await peerConnection.createOffer()
-      await peerConnection.setLocalDescription(offer)
-
-      console.log('Sending offer to existing participant:', userId)
-      this.socket?.emit('offer', {
-        meetingId: this.meetingId,
-        targetUserId: userId,
-        offer: offer
-      })
-    } catch (error) {
-      console.error('Error creating offer for existing participant:', error)
-    }
-  }
 
   disconnect() {
     this.leaveMeeting()

@@ -35,10 +35,10 @@ export default function VideoGrid({
     ...participants
   ]
 
-  console.log('VideoGrid: All participants:', allParticipants)
-  console.log('VideoGrid: Local stream:', localStream)
-  console.log('VideoGrid: Participant streams:', participantStreams)
-  console.log('VideoGrid: Build timestamp:', new Date().toISOString())
+  // Only log when participants actually change
+  if (process.env.NODE_ENV === 'development') {
+    console.log('VideoGrid: Rendering with', allParticipants.length, 'participants')
+  }
   
   // Calculate grid layout based on number of participants
   const getGridCols = (count: number) => {

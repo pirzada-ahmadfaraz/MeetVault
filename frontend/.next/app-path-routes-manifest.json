@@ -1,15 +1,15 @@
 {
   "/_not-found/page": "/_not-found",
   "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
-  "/about/page": "/about",
   "/dashboard/page": "/dashboard",
-  "/privacy/page": "/privacy",
-  "/page": "/",
-  "/profile/page": "/profile",
   "/meetings/page": "/meetings",
-  "/settings/page": "/settings",
-  "/terms/page": "/terms",
   "/meeting/[meetingId]/page": "/meeting/[meetingId]",
-  "/auth/login/page": "/auth/login",
-  "/auth/register/page": "/auth/register"
+  "/page": "/",
+  "/about/page": "/about",
+  "/privacy/page": "/privacy",
+  "/settings/page": "/settings",
+  "/profile/page": "/profile",
+  "/terms/page": "/terms",
+  "/auth/register/page": "/auth/register",
+  "/auth/login/page": "/auth/login"
 }
