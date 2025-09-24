@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Meeting } from '@/types'
 import { useAuth } from '@/lib/auth-context'
 import { WebRTCService, Participant } from '@/services/webrtc'
+import { VoiceActivityDetector } from '@/utils/voiceActivityDetection'
 import VideoGrid from './VideoGrid'
 import ChatPanel from './ChatPanel'
 import MeetingControls from './MeetingControls'
@@ -43,6 +44,7 @@ export default function MeetingRoom({
   const [error, setError] = useState<string | null>(null)
 
   const webRTCService = useRef<WebRTCService | null>(null)
+  const voiceDetector = useRef<VoiceActivityDetector | null>(null)
 
   const isHost = meeting.host._id === user?._id
 
@@ -60,6 +62,10 @@ export default function MeetingRoom({
         webRTCService.current.leaveMeeting()
         webRTCService.current.disconnect()
         webRTCService.current = null
+      }
+      if (voiceDetector.current) {
+        voiceDetector.current.cleanup()
+        voiceDetector.current = null
       }
     }
   }, [hasJoined, meeting.meetingId])
@@ -115,8 +121,39 @@ export default function MeetingRoom({
       const stream = webRTCService.current.getLocalStream()
       console.log('MeetingRoom: Got local stream:', stream)
       setLocalStream(stream)
+
+      // Initialize voice activity detection for local stream
+      if (stream && isAudioEnabled) {
+        initializeVoiceDetection(stream)
+      }
     } else {
       console.error('MeetingRoom: Failed to join meeting with WebRTC')
+    }
+  }
+
+  const initializeVoiceDetection = async (stream: MediaStream) => {
+    try {
+      voiceDetector.current = new VoiceActivityDetector()
+      const success = await voiceDetector.current.initialize(stream)
+
+      if (success) {
+        voiceDetector.current.addCallback((isSpeaking: boolean) => {
+          setSpeakingParticipants(prev => {
+            const newSet = new Set(prev)
+            if (isSpeaking) {
+              newSet.add('local')
+            } else {
+              newSet.delete('local')
+            }
+            return newSet
+          })
+        })
+        console.log('Voice activity detection initialized successfully')
+      } else {
+        console.error('Failed to initialize voice activity detection')
+      }
+    } catch (error) {
+      console.error('Error setting up voice activity detection:', error)
     }
   }
 
@@ -148,6 +185,20 @@ export default function MeetingRoom({
     if (webRTCService.current) {
       const enabled = await webRTCService.current.toggleAudio()
       setIsAudioEnabled(enabled)
+
+      // Handle voice detection when audio is toggled
+      if (enabled && localStream) {
+        // Re-initialize voice detection when audio is enabled
+        initializeVoiceDetection(localStream)
+      } else if (voiceDetector.current) {
+        // Stop voice detection when audio is disabled
+        voiceDetector.current.stopDetection()
+        setSpeakingParticipants(prev => {
+          const newSet = new Set(prev)
+          newSet.delete('local')
+          return newSet
+        })
+      }
     }
   }
 
@@ -258,30 +309,44 @@ export default function MeetingRoom({
 
       {/* Participants Modal */}
       {showParticipants && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-2xl p-6 w-96 max-h-96 overflow-y-auto border border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Participants</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Participants ({participants.length + 1})</h3>
               <button
                 onClick={() => setShowParticipants(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {user && (
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium text-gray-900">{user.firstName} {user.lastName} (You)</span>
-                  <span className="text-sm text-gray-500">Host</span>
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
+                      {user.firstName?.[0]}{user.lastName?.[0]}
+                    </div>
+                    <span className="font-medium text-gray-900">{user.firstName} {user.lastName} (You)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Host</span>
+                  </div>
                 </div>
               )}
               {participants.map((participant) => (
-                <div key={participant.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                  <span className="text-gray-900">{participant.user.firstName} {participant.user.lastName}</span>
-                  <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full ${participant.isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <div className={`w-2 h-2 rounded-full ${participant.isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div key={participant.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
+                      {participant.user.firstName?.[0]}{participant.user.lastName?.[0]}
+                    </div>
+                    <span className="text-gray-900">{participant.user.firstName} {participant.user.lastName}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
+                      <div className={`w-3 h-3 rounded-full ${participant.isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={participant.isAudioEnabled ? 'Audio on' : 'Audio off'}></div>
+                      <div className={`w-3 h-3 rounded-full ${participant.isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={participant.isVideoEnabled ? 'Video on' : 'Video off'}></div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -292,46 +357,62 @@ export default function MeetingRoom({
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Settings</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-2xl p-6 w-96 border border-gray-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Audio & Video</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={isVideoEnabled}
-                      onChange={handleToggleVideo}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Camera</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={isAudioEnabled}
-                      onChange={handleToggleAudio}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Microphone</span>
-                  </label>
+                <h4 className="font-medium text-gray-900 mb-3">Audio & Video Controls</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Camera</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isVideoEnabled}
+                        onChange={handleToggleVideo}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Microphone</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isAudioEnabled}
+                        onChange={handleToggleAudio}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Meeting Info</h4>
-                <div className="text-sm text-gray-600">
-                  <p>Meeting ID: {meeting.meetingId}</p>
-                  <p>Title: {meeting.title}</p>
+                <h4 className="font-medium text-gray-900 mb-3">Meeting Information</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Meeting ID:</span>
+                    <span className="text-sm font-mono text-gray-900">{meeting.meetingId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Title:</span>
+                    <span className="text-sm text-gray-900">{meeting.title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Host:</span>
+                    <span className="text-sm text-gray-900">{meeting.host.firstName} {meeting.host.lastName}</span>
+                  </div>
                 </div>
               </div>
             </div>

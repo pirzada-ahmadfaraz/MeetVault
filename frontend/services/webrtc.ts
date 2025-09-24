@@ -61,8 +61,14 @@ export class WebRTCService {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'
     const socketUrl = apiUrl.replace('/api', '')
 
+    // Get auth token from localStorage or session
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+
     this.socket = io(socketUrl, {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      auth: {
+        token: token
+      }
     })
 
     this.socket.on('connect', () => {
@@ -80,7 +86,30 @@ export class WebRTCService {
 
     this.socket.on('user-left', (data) => {
       console.log('User left:', data)
-      this.handleUserLeft(data.participantId)
+      this.handleUserLeft(data.userId)
+    })
+
+    this.socket.on('meeting-joined', (data) => {
+      console.log('Meeting joined successfully:', data)
+      // Handle existing participants
+      if (data.participants) {
+        data.participants.forEach(participant => {
+          this.callbacks?.onParticipantJoined({
+            id: participant.userId.toString(),
+            userId: participant.userId.toString(),
+            user: participant.user,
+            isHost: false,
+            isVideoEnabled: participant.isVideoEnabled,
+            isAudioEnabled: participant.isAudioEnabled,
+            isScreenSharing: participant.isScreenSharing
+          })
+        })
+      }
+    })
+
+    this.socket.on('user-disconnected', (data) => {
+      console.log('User disconnected:', data)
+      this.handleUserLeft(data.userId)
     })
 
     this.socket.on('offer', (data) => {
@@ -99,11 +128,11 @@ export class WebRTCService {
     })
 
     this.socket.on('participant-video-toggled', (data) => {
-      this.callbacks?.onParticipantToggleVideo(data.participantId, data.enabled)
+      this.callbacks?.onParticipantToggleVideo(data.userId, data.isVideoEnabled)
     })
 
     this.socket.on('participant-audio-toggled', (data) => {
-      this.callbacks?.onParticipantToggleAudio(data.participantId, data.enabled)
+      this.callbacks?.onParticipantToggleAudio(data.userId, data.isAudioEnabled)
     })
 
     this.socket.on('participant-started-screen-share', (data) => {
@@ -181,7 +210,7 @@ export class WebRTCService {
       // Notify other participants
       this.socket?.emit('toggle-video', {
         meetingId: this.meetingId,
-        enabled: videoTrack.enabled
+        isVideoEnabled: videoTrack.enabled
       })
 
       return videoTrack.enabled
@@ -200,7 +229,7 @@ export class WebRTCService {
       // Notify other participants
       this.socket?.emit('toggle-audio', {
         meetingId: this.meetingId,
-        enabled: audioTrack.enabled
+        isAudioEnabled: audioTrack.enabled
       })
 
       return audioTrack.enabled
@@ -257,11 +286,27 @@ export class WebRTCService {
   }
 
   private async handleUserJoined(data: any) {
-    const { participant } = data
+    const { userId, user } = data
+
+    const participant: Participant = {
+      id: userId,
+      userId: userId,
+      user: {
+        _id: userId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email || ''
+      },
+      isHost: false,
+      isVideoEnabled: true,
+      isAudioEnabled: true,
+      isScreenSharing: false
+    }
 
     // Create peer connection for this participant
-    const peerConnection = this.createPeerConnection(participant.id)
-    this.peerConnections.set(participant.id, peerConnection)
+    const peerConnection = this.createPeerConnection(userId)
+    this.peerConnections.set(userId, peerConnection)
 
     // Add local stream to peer connection
     if (this.localStream) {
@@ -276,7 +321,7 @@ export class WebRTCService {
 
     this.socket?.emit('offer', {
       meetingId: this.meetingId,
-      target: participant.id,
+      targetUserId: userId,
       offer: offer
     })
 
@@ -294,10 +339,10 @@ export class WebRTCService {
   }
 
   private async handleOffer(data: any) {
-    const { from, offer } = data
+    const { fromUserId, offer } = data
 
-    const peerConnection = this.createPeerConnection(from)
-    this.peerConnections.set(from, peerConnection)
+    const peerConnection = this.createPeerConnection(fromUserId)
+    this.peerConnections.set(fromUserId, peerConnection)
 
     // Add local stream to peer connection
     if (this.localStream) {
@@ -313,24 +358,24 @@ export class WebRTCService {
 
     this.socket?.emit('answer', {
       meetingId: this.meetingId,
-      target: from,
+      targetUserId: fromUserId,
       answer: answer
     })
   }
 
   private async handleAnswer(data: any) {
-    const { from, answer } = data
+    const { fromUserId, answer } = data
 
-    const peerConnection = this.peerConnections.get(from)
+    const peerConnection = this.peerConnections.get(fromUserId)
     if (peerConnection) {
       await peerConnection.setRemoteDescription(answer)
     }
   }
 
   private async handleIceCandidate(data: any) {
-    const { from, candidate } = data
+    const { fromUserId, candidate } = data
 
-    const peerConnection = this.peerConnections.get(from)
+    const peerConnection = this.peerConnections.get(fromUserId)
     if (peerConnection && candidate) {
       await peerConnection.addIceCandidate(candidate)
     }
@@ -345,7 +390,7 @@ export class WebRTCService {
       if (event.candidate) {
         this.socket?.emit('ice-candidate', {
           meetingId: this.meetingId,
-          target: participantId,
+          targetUserId: participantId,
           candidate: event.candidate
         })
       }
