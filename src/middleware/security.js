@@ -33,7 +33,10 @@ class SecurityMiddleware {
           'http://localhost:3000',
           'http://localhost:3001',
           'http://127.0.0.1:3000',
-          'http://127.0.0.1:3001'
+          'http://127.0.0.1:3001',
+          'https://meet-vault.vercel.app',
+          'https://meet-vault-git-main-ahmadfarazs-projects.vercel.app',
+          'https://meet-vault-ahmadfarazs-projects.vercel.app'
         ];
         
         if (allowedOrigins.includes(origin)) {
