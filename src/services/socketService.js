@@ -137,26 +137,35 @@ class SocketService {
       socket.to(meetingId).emit('user-joined', {
         userId: socket.userId,
         user: {
+          _id: socket.userId,
           username: socket.user.username,
           firstName: socket.user.firstName,
-          lastName: socket.user.lastName
+          lastName: socket.user.lastName,
+          email: socket.user.email
         }
       });
 
-      // Send current participants to the new user
-      const currentParticipants = meeting.participants
-        .filter(p => !p.leftAt)
-        .map(p => ({
-          userId: p.user._id,
-          user: p.user,
-          isVideoEnabled: p.isVideoEnabled,
-          isAudioEnabled: p.isAudioEnabled,
-          isScreenSharing: p.isScreenSharing
+      // Get all connected users in this meeting room
+      const connectedSockets = await this.io.in(meetingId).fetchSockets();
+      const connectedParticipants = connectedSockets
+        .filter(s => s.userId !== socket.userId)
+        .map(s => ({
+          userId: s.userId,
+          user: {
+            _id: s.userId,
+            username: s.user.username,
+            firstName: s.user.firstName,
+            lastName: s.user.lastName,
+            email: s.user.email
+          },
+          isVideoEnabled: true,
+          isAudioEnabled: true,
+          isScreenSharing: false
         }));
 
       socket.emit('meeting-joined', {
         meeting: meeting,
-        participants: currentParticipants
+        participants: connectedParticipants
       });
 
       console.log(`User ${socket.user.username} joined meeting ${meetingId}`);
