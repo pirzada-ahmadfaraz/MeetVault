@@ -89,11 +89,11 @@ export class WebRTCService {
       this.handleUserLeft(data.userId)
     })
 
-    this.socket.on('meeting-joined', (data) => {
+    this.socket.on('meeting-joined', (data: any) => {
       console.log('Meeting joined successfully:', data)
       // Handle existing participants
       if (data.participants) {
-        data.participants.forEach(participant => {
+        data.participants.forEach((participant: any) => {
           this.callbacks?.onParticipantJoined({
             id: participant.userId.toString(),
             userId: participant.userId.toString(),

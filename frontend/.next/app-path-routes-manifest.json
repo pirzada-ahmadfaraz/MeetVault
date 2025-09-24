@@ -1,0 +1,15 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/about/page": "/about",
+  "/profile/page": "/profile",
+  "/meetings/page": "/meetings",
+  "/meeting/[meetingId]/page": "/meeting/[meetingId]",
+  "/settings/page": "/settings",
+  "/terms/page": "/terms",
+  "/page": "/",
+  "/dashboard/page": "/dashboard",
+  "/privacy/page": "/privacy",
+  "/auth/register/page": "/auth/register",
+  "/auth/login/page": "/auth/login"
+}
