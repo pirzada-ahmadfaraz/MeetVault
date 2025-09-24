@@ -242,45 +242,83 @@ export default function MeetingRoom({
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       {/* Meeting Header */}
-      <div className="bg-gray-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-white font-medium">{meeting.title}</h1>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-300">
-              {participants.length + 1} participants
-            </span>
+      <div className="bg-gray-800 px-3 sm:px-4 py-2 sm:py-3">
+        {/* Mobile Layout */}
+        <div className="sm:hidden flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 flex-1 min-w-0">
+              <h1 className="text-white font-medium text-sm truncate">{meeting.title}</h1>
+            </div>
+            <button
+              onClick={onLeave}
+              className="bg-red-600 text-white px-3 py-1.5 rounded-md text-sm font-medium"
+            >
+              Leave
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-gray-300">
+                {participants.length + 1} participants
+              </span>
+            </div>
+            {meeting.settings.allowChat && (
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`p-2 rounded-md transition-colors ${
+                  isChatOpen
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300'
+                }`}
+              >
+                <ChatBubbleLeftRightIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          {meeting.settings.allowChat && (
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-white font-medium">{meeting.title}</h1>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-300">
+                {participants.length + 1} participants
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {meeting.settings.allowChat && (
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`p-2 rounded-md transition-colors ${
+                  isChatOpen
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <ChatBubbleLeftRightIcon className="h-5 w-5" />
+              </button>
+            )}
+
             <button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className={`p-2 rounded-md transition-colors ${
-                isChatOpen 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
+              onClick={onLeave}
+              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
             >
-              <ChatBubbleLeftRightIcon className="h-5 w-5" />
+              Leave
             </button>
-          )}
-          
-          <button
-            onClick={onLeave}
-            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
-          >
-            Leave
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
         {/* Video Area */}
-        <div className={`flex-1 flex flex-col ${isChatOpen ? 'mr-80' : ''}`}>
-          <div className="flex-1 p-4 min-h-0">
+        <div className={`flex-1 flex flex-col ${isChatOpen && 'sm:mr-80'}`}>
+          <div className="flex-1 p-2 sm:p-4 min-h-0">
             <VideoGrid
               participants={participants}
               localStream={localStream}
@@ -293,7 +331,7 @@ export default function MeetingRoom({
           </div>
 
           {/* Meeting Controls */}
-          <div className="p-4 flex-shrink-0">
+          <div className="p-3 sm:p-4 flex-shrink-0 bg-gray-800 sm:bg-transparent">
             <MeetingControls
               isVideoEnabled={isVideoEnabled}
               isAudioEnabled={isAudioEnabled}
@@ -312,7 +350,7 @@ export default function MeetingRoom({
 
         {/* Chat Panel */}
         {isChatOpen && meeting.settings.allowChat && (
-          <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+          <div className="fixed sm:static inset-x-0 bottom-0 top-16 sm:top-0 sm:w-80 bg-white border-l border-gray-200 flex flex-col z-50 sm:z-auto">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-medium text-gray-900">Chat</h3>
               <button

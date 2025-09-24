@@ -3,14 +3,14 @@
   "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
   "/favicon.ico/route": "/favicon.ico",
   "/about/page": "/about",
-  "/dashboard/page": "/dashboard",
-  "/meeting/[meetingId]/page": "/meeting/[meetingId]",
   "/privacy/page": "/privacy",
-  "/page": "/",
+  "/meeting/[meetingId]/page": "/meeting/[meetingId]",
   "/meetings/page": "/meetings",
-  "/profile/page": "/profile",
-  "/settings/page": "/settings",
   "/terms/page": "/terms",
-  "/auth/register/page": "/auth/register",
-  "/auth/login/page": "/auth/login"
+  "/page": "/",
+  "/dashboard/page": "/dashboard",
+  "/settings/page": "/settings",
+  "/profile/page": "/profile",
+  "/auth/login/page": "/auth/login",
+  "/auth/register/page": "/auth/register"
 }
