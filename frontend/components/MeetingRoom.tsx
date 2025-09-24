@@ -242,7 +242,7 @@ export default function MeetingRoom({
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
             <span className="text-sm text-gray-300">
-              {meeting.participants.filter(p => !p.leftAt).length} participants
+              {participants.length + 1} participants
             </span>
           </div>
         </div>

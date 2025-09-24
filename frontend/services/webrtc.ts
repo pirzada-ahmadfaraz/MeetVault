@@ -94,7 +94,7 @@ export class WebRTCService {
       // Handle existing participants
       if (data.participants && data.participants.length > 0) {
         console.log('Adding existing participants:', data.participants)
-        data.participants.forEach((participant: any) => {
+        data.participants.forEach(async (participant: any) => {
           const formattedParticipant = {
             id: participant.userId.toString(),
             userId: participant.userId.toString(),
@@ -106,6 +106,9 @@ export class WebRTCService {
           }
           console.log('Adding participant:', formattedParticipant)
           this.callbacks?.onParticipantJoined(formattedParticipant)
+
+          // Create peer connection for existing participant
+          await this.createPeerConnectionForExistingParticipant(participant.userId)
         })
       } else {
         console.log('No existing participants found')
@@ -443,6 +446,40 @@ export class WebRTCService {
 
   getMediaControls(): MediaControls {
     return { ...this.mediaControls }
+  }
+
+  private async createPeerConnectionForExistingParticipant(userId: string) {
+    console.log('Creating peer connection for existing participant:', userId)
+
+    if (this.peerConnections.has(userId)) {
+      console.log('Peer connection already exists for:', userId)
+      return
+    }
+
+    const peerConnection = this.createPeerConnection(userId)
+    this.peerConnections.set(userId, peerConnection)
+
+    // Add local stream to peer connection
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, this.localStream!)
+      })
+    }
+
+    // Create and send an offer to the existing participant
+    try {
+      const offer = await peerConnection.createOffer()
+      await peerConnection.setLocalDescription(offer)
+
+      console.log('Sending offer to existing participant:', userId)
+      this.socket?.emit('offer', {
+        meetingId: this.meetingId,
+        targetUserId: userId,
+        offer: offer
+      })
+    } catch (error) {
+      console.error('Error creating offer for existing participant:', error)
+    }
   }
 
   disconnect() {
