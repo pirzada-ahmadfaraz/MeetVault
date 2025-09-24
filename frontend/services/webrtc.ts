@@ -54,18 +54,27 @@ export class WebRTCService {
   ]
 
   constructor() {
-    this.initializeSocket()
+    // Don't initialize socket immediately - wait for authentication
   }
 
   private initializeSocket() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'
     const socketUrl = apiUrl.replace('/api', '')
 
+    console.log('🔌 WebRTC: Initializing socket connection to:', socketUrl)
+
     // Get auth token from localStorage or session
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
+
+    if (!token) {
+      console.error('❌ WebRTC: No auth token found')
+      return
+    }
 
     this.socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
+      timeout: 10000,
+      forceNew: true,
       auth: {
         token: token
       }
@@ -73,10 +82,17 @@ export class WebRTCService {
 
     this.socket.on('connect', () => {
       console.log('📡 WebRTC: Connected to signaling server')
+      console.log('🆔 WebRTC: Socket ID:', this.socket?.id)
     })
 
-    this.socket.on('disconnect', () => {
-      console.log('📡 WebRTC: Disconnected from signaling server')
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ WebRTC: Socket connection failed:', error)
+      console.log('🔍 WebRTC: Trying to connect to:', socketUrl)
+      console.log('🔑 WebRTC: Using token:', token ? 'Present' : 'Missing')
+    })
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('📡 WebRTC: Disconnected from signaling server. Reason:', reason)
     })
 
     this.socket.on('user-joined', (data) => {
@@ -156,16 +172,65 @@ export class WebRTCService {
     })
   }
 
+  private async waitForSocketConnection(timeout = 10000): Promise<boolean> {
+    if (this.socket?.connected) {
+      console.log('✅ WebRTC: Socket already connected')
+      return true
+    }
+
+    console.log('⏳ WebRTC: Waiting for socket connection...')
+
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        console.error('⏰ WebRTC: Socket connection timeout')
+        resolve(false)
+      }, timeout)
+
+      const onConnect = () => {
+        console.log('✅ WebRTC: Socket connected successfully')
+        clearTimeout(timeoutId)
+        this.socket?.off('connect', onConnect)
+        this.socket?.off('connect_error', onError)
+        resolve(true)
+      }
+
+      const onError = (error: any) => {
+        console.error('❌ WebRTC: Socket connection error during wait:', error)
+        clearTimeout(timeoutId)
+        this.socket?.off('connect', onConnect)
+        this.socket?.off('connect_error', onError)
+        resolve(false)
+      }
+
+      if (this.socket) {
+        this.socket.on('connect', onConnect)
+        this.socket.on('connect_error', onError)
+      } else {
+        clearTimeout(timeoutId)
+        resolve(false)
+      }
+    })
+  }
+
   async joinMeeting(meetingId: string, callbacks: WebRTCCallbacks) {
     console.log('🚀 WebRTC: Attempting to join meeting:', meetingId)
     this.meetingId = meetingId
     this.callbacks = callbacks
 
     try {
-      // Check socket connection first
-      if (!this.socket || !this.socket.connected) {
-        console.error('❌ WebRTC: Socket not connected')
-        this.callbacks?.onError('Connection failed. Please refresh and try again.')
+      // Initialize socket if not already done
+      if (!this.socket) {
+        console.log('🔧 WebRTC: Initializing socket connection...')
+        this.initializeSocket()
+      }
+
+      // Wait for socket connection first
+      console.log('🔌 WebRTC: Ensuring socket connection...')
+      const isConnected = await this.waitForSocketConnection()
+
+      if (!isConnected) {
+        console.error('❌ WebRTC: Failed to establish socket connection')
+        this.callbacks?.onError('Failed to connect to server. Please check your internet connection and try again.')
         return false
       }
 
