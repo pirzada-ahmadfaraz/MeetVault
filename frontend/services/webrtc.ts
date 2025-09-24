@@ -92,9 +92,10 @@ export class WebRTCService {
     this.socket.on('meeting-joined', (data: any) => {
       console.log('Meeting joined successfully:', data)
       // Handle existing participants
-      if (data.participants) {
+      if (data.participants && data.participants.length > 0) {
+        console.log('Adding existing participants:', data.participants)
         data.participants.forEach((participant: any) => {
-          this.callbacks?.onParticipantJoined({
+          const formattedParticipant = {
             id: participant.userId.toString(),
             userId: participant.userId.toString(),
             user: participant.user,
@@ -102,8 +103,12 @@ export class WebRTCService {
             isVideoEnabled: participant.isVideoEnabled,
             isAudioEnabled: participant.isAudioEnabled,
             isScreenSharing: participant.isScreenSharing
-          })
+          }
+          console.log('Adding participant:', formattedParticipant)
+          this.callbacks?.onParticipantJoined(formattedParticipant)
         })
+      } else {
+        console.log('No existing participants found')
       }
     })
 
@@ -286,6 +291,7 @@ export class WebRTCService {
   }
 
   private async handleUserJoined(data: any) {
+    console.log('handleUserJoined called with data:', data)
     const { userId, user } = data
 
     const participant: Participant = {
@@ -303,6 +309,8 @@ export class WebRTCService {
       isAudioEnabled: true,
       isScreenSharing: false
     }
+
+    console.log('Creating participant:', participant)
 
     // Create peer connection for this participant
     const peerConnection = this.createPeerConnection(userId)
@@ -325,6 +333,7 @@ export class WebRTCService {
       offer: offer
     })
 
+    console.log('Calling onParticipantJoined callback')
     this.callbacks?.onParticipantJoined(participant)
   }
 

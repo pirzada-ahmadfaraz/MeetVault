@@ -48,6 +48,11 @@ export default function MeetingRoom({
 
   const isHost = meeting.host._id === user?._id
 
+  // Debug effect to track participant changes
+  useEffect(() => {
+    console.log('MeetingRoom: Participants state changed:', participants.length, participants)
+  }, [participants])
+
   useEffect(() => {
     setShowJoinModal(!hasJoined)
   }, [hasJoined])
@@ -75,12 +80,21 @@ export default function MeetingRoom({
 
     const callbacks = {
       onParticipantJoined: (participant: Participant) => {
-        console.log('Participant joined:', participant)
-        setParticipants(prev => [...prev, participant])
+        console.log('MeetingRoom: Participant joined:', participant)
+        setParticipants(prev => {
+          console.log('MeetingRoom: Previous participants:', prev)
+          const updated = [...prev, participant]
+          console.log('MeetingRoom: Updated participants:', updated)
+          return updated
+        })
       },
       onParticipantLeft: (participantId: string) => {
-        console.log('Participant left:', participantId)
-        setParticipants(prev => prev.filter(p => p.id !== participantId))
+        console.log('MeetingRoom: Participant left:', participantId)
+        setParticipants(prev => {
+          const updated = prev.filter(p => p.id !== participantId)
+          console.log('MeetingRoom: Participants after leave:', updated)
+          return updated
+        })
         setParticipantStreams(prev => {
           const newMap = new Map(prev)
           newMap.delete(participantId)
@@ -309,38 +323,42 @@ export default function MeetingRoom({
 
       {/* Participants Modal */}
       {showParticipants && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg shadow-2xl p-6 w-96 max-h-96 overflow-y-auto border border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
+          <div className="bg-gray-800 rounded-lg shadow-2xl p-6 w-96 max-h-96 overflow-y-auto border border-gray-600">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Participants ({participants.length + 1})</h3>
+              <h3 className="text-lg font-semibold text-white">Participants ({participants.length + 1})</h3>
               <button
                 onClick={() => setShowParticipants(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <div className="space-y-2">
               {user && (
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between p-3 bg-blue-900/50 rounded-lg border border-blue-700">
                   <div className="flex items-center space-x-3">
                     <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
                       {user.firstName?.[0]}{user.lastName?.[0]}
                     </div>
-                    <span className="font-medium text-gray-900">{user.firstName} {user.lastName} (You)</span>
+                    <span className="font-medium text-white">{user.firstName} {user.lastName} (You)</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Host</span>
+                    <span className="text-xs font-medium text-blue-300 bg-blue-900/70 px-2 py-1 rounded">Host</span>
+                    <div className="flex items-center space-x-1">
+                      <div className={`w-3 h-3 rounded-full ${isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={isAudioEnabled ? 'Audio on' : 'Audio off'}></div>
+                      <div className={`w-3 h-3 rounded-full ${isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={isVideoEnabled ? 'Video on' : 'Video off'}></div>
+                    </div>
                   </div>
                 </div>
               )}
               {participants.map((participant) => (
-                <div key={participant.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                <div key={participant.id} className="flex items-center justify-between p-3 hover:bg-gray-700 rounded-lg transition-colors">
                   <div className="flex items-center space-x-3">
                     <div className="bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
                       {participant.user.firstName?.[0]}{participant.user.lastName?.[0]}
                     </div>
-                    <span className="text-gray-900">{participant.user.firstName} {participant.user.lastName}</span>
+                    <span className="text-white">{participant.user.firstName} {participant.user.lastName}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
@@ -350,6 +368,11 @@ export default function MeetingRoom({
                   </div>
                 </div>
               ))}
+              {participants.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-sm">No other participants have joined yet</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -357,23 +380,23 @@ export default function MeetingRoom({
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg shadow-2xl p-6 w-96 border border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
+          <div className="bg-gray-800 rounded-lg shadow-2xl p-6 w-96 border border-gray-600">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
+              <h3 className="text-lg font-semibold text-white">Settings</h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <div className="space-y-6">
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Audio & Video Controls</h4>
+                <h4 className="font-medium text-white mb-3">Audio & Video Controls</h4>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Camera</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                    <span className="text-sm font-medium text-gray-200">Camera</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
@@ -381,11 +404,11 @@ export default function MeetingRoom({
                         onChange={handleToggleVideo}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Microphone</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                    <span className="text-sm font-medium text-gray-200">Microphone</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
@@ -393,25 +416,25 @@ export default function MeetingRoom({
                         onChange={handleToggleAudio}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Meeting Information</h4>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <h4 className="font-medium text-white mb-3">Meeting Information</h4>
+                <div className="bg-gray-700 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Meeting ID:</span>
-                    <span className="text-sm font-mono text-gray-900">{meeting.meetingId}</span>
+                    <span className="text-sm text-gray-300">Meeting ID:</span>
+                    <span className="text-sm font-mono text-white">{meeting.meetingId}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Title:</span>
-                    <span className="text-sm text-gray-900">{meeting.title}</span>
+                    <span className="text-sm text-gray-300">Title:</span>
+                    <span className="text-sm text-white">{meeting.title}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Host:</span>
-                    <span className="text-sm text-gray-900">{meeting.host.firstName} {meeting.host.lastName}</span>
+                    <span className="text-sm text-gray-300">Host:</span>
+                    <span className="text-sm text-white">{meeting.host.firstName} {meeting.host.lastName}</span>
                   </div>
                 </div>
               </div>
