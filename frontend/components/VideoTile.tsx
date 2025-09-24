@@ -13,13 +13,15 @@ interface VideoTileProps {
   stream?: MediaStream | null
   isSmall?: boolean
   showControls?: boolean
+  isSpeaking?: boolean
 }
 
 export default function VideoTile({
   participant,
   stream,
   isSmall = false,
-  showControls = true
+  showControls = true,
+  isSpeaking = false
 }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const { user, isVideoEnabled, isAudioEnabled, isScreenSharing, isHost } = participant
@@ -34,7 +36,13 @@ export default function VideoTile({
   }, [stream, participant.id, isVideoEnabled])
 
   return (
-    <div className={`relative bg-gray-800 rounded-lg overflow-hidden ${isSmall ? 'h-24' : 'h-full min-h-[200px] max-h-[600px]'}`}>
+    <div className={`relative ${
+      isVideoEnabled && stream
+        ? 'bg-gray-900'
+        : 'bg-gray-800 border border-gray-600'
+    } rounded-lg overflow-hidden ${
+      isSmall ? 'h-24' : 'h-full min-h-[200px] max-h-[600px]'
+    } transition-all duration-200`}>
       {/* Video content */}
       <div className="w-full h-full flex items-center justify-center">
         {isVideoEnabled && stream ? (
@@ -44,19 +52,26 @@ export default function VideoTile({
             autoPlay
             playsInline
             muted={participant.id === 'local'} // Mute local video to prevent echo
-            className="w-full h-full object-contain bg-gray-900"
+            className={`w-full h-full object-contain bg-gray-900 ${
+              participant.id === 'local' ? 'transform scale-x-[-1]' : ''
+            }`}
           />
         ) : (
           // Avatar placeholder when video is off
-          <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-            <div className="text-center">
-              <div className="bg-gray-600 p-4 rounded-full w-16 h-16 mx-auto mb-2 flex items-center justify-center">
-                <UserIcon className="h-8 w-8 text-gray-300" />
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
+            <div className="text-center p-4">
+              <div className="bg-gradient-to-br from-gray-600 to-gray-500 p-6 rounded-full w-20 h-20 mx-auto mb-3 flex items-center justify-center shadow-lg">
+                <UserIcon className="h-10 w-10 text-gray-200" />
               </div>
               {!isSmall && (
-                <p className="text-white text-sm font-medium">
-                  {user.firstName} {user.lastName}
-                </p>
+                <div>
+                  <p className="text-white text-base font-medium mb-1">
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p className="text-gray-300 text-xs">
+                    Camera off
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -122,9 +137,9 @@ export default function VideoTile({
       </div>
 
       {/* Speaking indicator */}
-      {isAudioEnabled && (
-        <div className="absolute inset-0 border-2 border-green-400 rounded-lg opacity-0 animate-pulse">
-          {/* This would be triggered by voice activity detection */}
+      {isAudioEnabled && isSpeaking && (
+        <div className="absolute inset-0 border-2 border-green-400 rounded-lg animate-pulse">
+          {/* This shows when the participant is actively speaking */}
         </div>
       )}
     </div>

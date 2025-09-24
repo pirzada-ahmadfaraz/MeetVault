@@ -37,6 +37,9 @@ export default function MeetingRoom({
   const [participants, setParticipants] = useState<Participant[]>([])
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [participantStreams, setParticipantStreams] = useState<Map<string, MediaStream>>(new Map())
+  const [speakingParticipants, setSpeakingParticipants] = useState<Set<string>>(new Set())
+  const [showParticipants, setShowParticipants] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const webRTCService = useRef<WebRTCService | null>(null)
@@ -115,6 +118,14 @@ export default function MeetingRoom({
     } else {
       console.error('MeetingRoom: Failed to join meeting with WebRTC')
     }
+  }
+
+  const handleShowParticipants = () => {
+    setShowParticipants(true)
+  }
+
+  const handleShowSettings = () => {
+    setShowSettings(true)
   }
 
   const handleJoinWithPassword = async (password?: string) => {
@@ -206,6 +217,7 @@ export default function MeetingRoom({
               isVideoEnabled={isVideoEnabled}
               isScreenSharing={isScreenSharing}
               currentUser={user}
+              speakingParticipants={speakingParticipants}
             />
           </div>
 
@@ -221,6 +233,8 @@ export default function MeetingRoom({
               onToggleScreenShare={handleToggleScreenShare}
               onLeave={onLeave}
               isHost={isHost}
+              onShowParticipants={handleShowParticipants}
+              onShowSettings={handleShowSettings}
             />
           </div>
         </div>
@@ -241,6 +255,89 @@ export default function MeetingRoom({
           </div>
         )}
       </div>
+
+      {/* Participants Modal */}
+      {showParticipants && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Participants</h3>
+              <button
+                onClick={() => setShowParticipants(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {user && (
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span className="font-medium text-gray-900">{user.firstName} {user.lastName} (You)</span>
+                  <span className="text-sm text-gray-500">Host</span>
+                </div>
+              )}
+              {participants.map((participant) => (
+                <div key={participant.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                  <span className="text-gray-900">{participant.user.firstName} {participant.user.lastName}</span>
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${participant.isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${participant.isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Settings</h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Audio & Video</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={isVideoEnabled}
+                      onChange={handleToggleVideo}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Camera</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={isAudioEnabled}
+                      onChange={handleToggleAudio}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Microphone</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Meeting Info</h4>
+                <div className="text-sm text-gray-600">
+                  <p>Meeting ID: {meeting.meetingId}</p>
+                  <p>Title: {meeting.title}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

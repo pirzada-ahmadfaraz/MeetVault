@@ -8,6 +8,7 @@ interface VideoGridProps {
   isVideoEnabled: boolean
   isScreenSharing: boolean
   currentUser: any
+  speakingParticipants?: Set<string>
 }
 
 export default function VideoGrid({
@@ -16,7 +17,8 @@ export default function VideoGrid({
   participantStreams,
   isVideoEnabled,
   isScreenSharing,
-  currentUser
+  currentUser,
+  speakingParticipants = new Set()
 }: VideoGridProps) {
   // Add current user as a participant for display
   const allParticipants: Participant[] = [
@@ -80,6 +82,7 @@ export default function VideoGrid({
                 stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
                 isSmall={true}
                 showControls={false}
+                isSpeaking={speakingParticipants.has(participant.id)}
               />
             </div>
           ))}
@@ -90,15 +93,17 @@ export default function VideoGrid({
 
   // Regular grid layout
   return (
-    <div className={`h-full max-h-full grid gap-4 ${getGridCols(allParticipants.length)} ${getGridRows(allParticipants.length)} items-center justify-items-center`}>
+    <div className={`h-full max-h-full grid gap-4 p-2 ${getGridCols(allParticipants.length)} ${getGridRows(allParticipants.length)} items-center justify-items-stretch`}>
       {allParticipants.map((participant) => (
-        <VideoTile
-          key={participant.id}
-          participant={participant}
-          stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
-          isSmall={false}
-          showControls={true}
-        />
+        <div key={participant.id} className="w-full aspect-video">
+          <VideoTile
+            participant={participant}
+            stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
+            isSmall={false}
+            showControls={true}
+            isSpeaking={speakingParticipants.has(participant.id)}
+          />
+        </div>
       ))}
 
       {/* Empty state when no participants */}

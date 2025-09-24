@@ -21,6 +21,8 @@ interface MeetingControlsProps {
   onToggleScreenShare: () => void
   onLeave: () => void
   isHost: boolean
+  onShowParticipants?: () => void
+  onShowSettings?: () => void
 }
 
 export default function MeetingControls({
@@ -32,7 +34,9 @@ export default function MeetingControls({
   onToggleAudio,
   onToggleScreenShare,
   onLeave,
-  isHost
+  isHost,
+  onShowParticipants,
+  onShowSettings
 }: MeetingControlsProps) {
   return (
     <div className="flex items-center justify-center space-x-4">
@@ -91,6 +95,7 @@ export default function MeetingControls({
       {/* Participants (Host only) */}
       {isHost && (
         <button
+          onClick={onShowParticipants}
           className="p-4 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition-colors"
           title="Manage participants"
         >
@@ -100,6 +105,7 @@ export default function MeetingControls({
 
       {/* Settings */}
       <button
+        onClick={onShowSettings}
         className="p-4 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition-colors"
         title="Settings"
       >
