@@ -133,7 +133,8 @@ class SocketService {
       socket.join(meetingId);
       socket.currentMeeting = meetingId;
 
-      // Notify other participants
+      // Notify other participants that this user joined
+      console.log(`Notifying existing participants in meeting ${meetingId} about new user ${socket.user.username}`);
       socket.to(meetingId).emit('user-joined', {
         userId: socket.userId,
         user: {
@@ -147,6 +148,9 @@ class SocketService {
 
       // Get all connected users in this meeting room
       const connectedSockets = await this.io.in(meetingId).fetchSockets();
+      console.log(`Total sockets in meeting ${meetingId}:`, connectedSockets.length);
+      console.log(`Socket IDs: ${connectedSockets.map(s => `${s.user?.username || 'unknown'}(${s.id})`).join(', ')}`);
+
       const connectedParticipants = connectedSockets
         .filter(s => s.userId !== socket.userId)
         .map(s => ({
@@ -162,6 +166,8 @@ class SocketService {
           isAudioEnabled: true,
           isScreenSharing: false
         }));
+
+      console.log(`Sending ${connectedParticipants.length} existing participants to ${socket.user.username}`);
 
       socket.emit('meeting-joined', {
         meeting: meeting,
@@ -200,12 +206,25 @@ class SocketService {
 
   handleWebRTCSignaling(socket, eventType, data) {
     const { targetUserId, ...signalData } = data;
-    
-    // Forward signaling data to specific user
-    socket.to(socket.currentMeeting).emit(eventType, {
-      fromUserId: socket.userId,
-      ...signalData
-    });
+
+    console.log(`WebRTC ${eventType} from ${socket.userId} to ${targetUserId || 'broadcast'}`);
+
+    if (targetUserId) {
+      // Send to specific user
+      const targetSockets = this.getUserSockets(targetUserId);
+      targetSockets.forEach(targetSocket => {
+        targetSocket.emit(eventType, {
+          fromUserId: socket.userId,
+          ...signalData
+        });
+      });
+    } else {
+      // Broadcast to all in meeting
+      socket.to(socket.currentMeeting).emit(eventType, {
+        fromUserId: socket.userId,
+        ...signalData
+      });
+    }
   }
 
   async handleToggleVideo(socket, data) {
