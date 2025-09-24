@@ -157,43 +157,82 @@ export class WebRTCService {
   }
 
   async joinMeeting(meetingId: string, callbacks: WebRTCCallbacks) {
+    console.log('🚀 WebRTC: Attempting to join meeting:', meetingId)
     this.meetingId = meetingId
     this.callbacks = callbacks
 
     try {
+      // Check socket connection first
+      if (!this.socket || !this.socket.connected) {
+        console.error('❌ WebRTC: Socket not connected')
+        this.callbacks?.onError('Connection failed. Please refresh and try again.')
+        return false
+      }
+
       // Get user media
+      console.log('🎥 WebRTC: Initializing camera and microphone...')
       await this.initializeUserMedia()
 
       // Join the meeting room via socket
+      console.log('🏠 WebRTC: Joining meeting room via socket...')
       this.socket?.emit('join-meeting', { meetingId })
 
+      console.log('✅ WebRTC: Meeting join process completed successfully')
       return true
     } catch (error) {
-      console.error('Failed to join meeting:', error)
-      this.callbacks?.onError('Failed to access camera/microphone')
+      console.error('❌ WebRTC: Failed to join meeting:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to access camera/microphone'
+      this.callbacks?.onError(errorMessage)
       return false
     }
   }
 
   async initializeUserMedia() {
     try {
+      console.log('🎥 WebRTC: Requesting camera and microphone access...')
+
+      // Check if mediaDevices is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('WebRTC is not supported in this browser')
+      }
+
       this.localStream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true
       })
 
+      console.log('✅ WebRTC: Successfully got user media stream:', this.localStream.id)
+
       // Set initial states
       this.localStream.getVideoTracks().forEach(track => {
         track.enabled = this.mediaControls.video
+        console.log('📹 WebRTC: Video track enabled:', track.enabled, 'Label:', track.label)
       })
 
       this.localStream.getAudioTracks().forEach(track => {
         track.enabled = this.mediaControls.audio
+        console.log('🎤 WebRTC: Audio track enabled:', track.enabled, 'Label:', track.label)
       })
 
       return this.localStream
     } catch (error) {
-      console.error('Failed to get user media:', error)
+      console.error('❌ WebRTC: Failed to get user media:', error)
+
+      // Provide specific error messages for different permission issues
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          throw new Error('Camera/microphone access denied. Please allow permissions and refresh.')
+        } else if (error.name === 'NotFoundError') {
+          throw new Error('No camera or microphone found. Please check your devices.')
+        } else if (error.name === 'NotReadableError') {
+          throw new Error('Camera/microphone is already in use by another application.')
+        } else if (error.name === 'OverconstrainedError') {
+          throw new Error('Camera/microphone constraints could not be satisfied.')
+        } else if (error.name === 'SecurityError') {
+          throw new Error('Camera/microphone access blocked by browser security.')
+        }
+      }
+
       throw error
     }
   }
