@@ -169,11 +169,13 @@ export class WebRTCService {
     })
 
     this.socket.on('participant-started-screen-share', (data) => {
-      console.log('Participant started screen share:', data)
+      console.log('🖥️ WebRTC: Participant started screen share:', data.userId)
+      this.callbacks?.onParticipantScreenShareStarted(data.userId, null as any) // Stream will come via peer connection
     })
 
     this.socket.on('participant-stopped-screen-share', (data) => {
-      console.log('Participant stopped screen share:', data)
+      console.log('🖥️ WebRTC: Participant stopped screen share:', data.userId)
+      this.callbacks?.onParticipantScreenShareStopped(data.userId)
     })
 
     this.socket.on('participant-voice-activity', (data) => {
@@ -398,6 +400,17 @@ export class WebRTCService {
       videoTrack.enabled = !videoTrack.enabled
       this.mediaControls.video = videoTrack.enabled
 
+      console.log('🎥 WebRTC: Video toggled to:', videoTrack.enabled)
+      console.log('🎤 WebRTC: Audio remains:', this.mediaControls.audio)
+
+      // Verify audio track is not affected
+      const audioTrack = this.localStream.getAudioTracks()[0]
+      if (audioTrack) {
+        console.log('🎤 WebRTC: Audio track enabled status:', audioTrack.enabled)
+        // Ensure audio track state matches our controls
+        audioTrack.enabled = this.mediaControls.audio
+      }
+
       // Notify other participants
       this.socket?.emit('toggle-video', {
         meetingId: this.meetingId,
@@ -424,6 +437,17 @@ export class WebRTCService {
       audioTrack.enabled = !audioTrack.enabled
       this.mediaControls.audio = audioTrack.enabled
 
+      console.log('🎤 WebRTC: Audio toggled to:', audioTrack.enabled)
+      console.log('🎥 WebRTC: Video remains:', this.mediaControls.video)
+
+      // Verify video track is not affected
+      const videoTrack = this.localStream.getVideoTracks()[0]
+      if (videoTrack) {
+        console.log('🎥 WebRTC: Video track enabled status:', videoTrack.enabled)
+        // Ensure video track state matches our controls
+        videoTrack.enabled = this.mediaControls.video
+      }
+
       // Notify other participants
       this.socket?.emit('toggle-audio', {
         meetingId: this.meetingId,
@@ -444,6 +468,19 @@ export class WebRTCService {
           this.localScreenStream = null
         }
 
+        // Restore original camera track in all peer connections
+        if (this.localStream) {
+          const cameraTrack = this.localStream.getVideoTracks()[0]
+
+          for (const [participantId, peerConnection] of this.peerConnections) {
+            const sender = peerConnection.getSenders().find(s => s.track?.kind === 'video')
+            if (sender && cameraTrack) {
+              await sender.replaceTrack(cameraTrack)
+              console.log('📹 WebRTC: Restored camera track for:', participantId)
+            }
+          }
+        }
+
         this.mediaControls.screenShare = false
 
         // Notify other participants
@@ -462,13 +499,54 @@ export class WebRTCService {
         this.mediaControls.screenShare = true
 
         // Handle screen share end (when user clicks "Stop sharing" in browser)
-        this.localScreenStream.getVideoTracks()[0].addEventListener('ended', () => {
+        this.localScreenStream.getVideoTracks()[0].addEventListener('ended', async () => {
+          console.log('🖥️ WebRTC: Screen share ended by user')
+
+          // Restore original camera track in all peer connections
+          if (this.localStream) {
+            const cameraTrack = this.localStream.getVideoTracks()[0]
+
+            for (const [participantId, peerConnection] of this.peerConnections) {
+              const sender = peerConnection.getSenders().find(s => s.track?.kind === 'video')
+              if (sender && cameraTrack) {
+                await sender.replaceTrack(cameraTrack)
+                console.log('📹 WebRTC: Restored camera track for:', participantId)
+              }
+            }
+          }
+
           this.mediaControls.screenShare = false
           this.localScreenStream = null
+
+          // Notify other participants
           this.socket?.emit('stop-screen-share', {
             meetingId: this.meetingId
           })
+
+          // Notify the UI callback if available
+          this.callbacks?.onParticipantScreenShareStopped?.('local')
         })
+
+        // Replace video track in all peer connections with screen share track
+        const screenTrack = this.localScreenStream.getVideoTracks()[0]
+        const audioTrack = this.localScreenStream.getAudioTracks()[0]
+
+        for (const [participantId, peerConnection] of this.peerConnections) {
+          const sender = peerConnection.getSenders().find(s => s.track?.kind === 'video')
+          if (sender && screenTrack) {
+            await sender.replaceTrack(screenTrack)
+            console.log('🖥️ WebRTC: Replaced video track with screen share for:', participantId)
+          }
+
+          // Add audio track if available
+          if (audioTrack) {
+            const audioSender = peerConnection.getSenders().find(s => s.track?.kind === 'audio' && s.track !== audioTrack)
+            if (!audioSender) {
+              peerConnection.addTrack(audioTrack, this.localScreenStream)
+              console.log('🎤 WebRTC: Added screen share audio for:', participantId)
+            }
+          }
+        }
 
         // Notify other participants
         this.socket?.emit('start-screen-share', {

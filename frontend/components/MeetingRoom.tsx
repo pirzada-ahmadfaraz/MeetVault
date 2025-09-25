@@ -46,6 +46,7 @@ export default function MeetingRoom({
   const [showSettings, setShowSettings] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isHostMuted, setIsHostMuted] = useState(false)
+  const [screenSharingParticipants, setScreenSharingParticipants] = useState<Set<string>>(new Set())
 
   const webRTCService = useRef<WebRTCService | null>(null)
   const voiceDetector = useRef<VoiceActivityDetector | null>(null)
@@ -116,12 +117,32 @@ export default function MeetingRoom({
         })
       },
       onParticipantScreenShareStarted: (participantId: string, stream: MediaStream) => {
-        console.log('Screen share started:', participantId)
-        // Handle screen share
+        console.log('🖥️ MeetingRoom: Screen share started:', participantId)
+        setScreenSharingParticipants(prev => {
+          const newSet = new Set(prev)
+          newSet.add(participantId)
+          return newSet
+        })
+        // Update participants list to reflect screen sharing status
+        setParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, isScreenSharing: true } : p)
+        )
       },
       onParticipantScreenShareStopped: (participantId: string) => {
-        console.log('Screen share stopped:', participantId)
-        // Handle screen share stop
+        console.log('🖥️ MeetingRoom: Screen share stopped:', participantId)
+        setScreenSharingParticipants(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(participantId)
+          return newSet
+        })
+        // Update participants list to reflect screen sharing stopped
+        setParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, isScreenSharing: false } : p)
+        )
+        // If this is the local user, also update the screen sharing state
+        if (participantId === 'local') {
+          setIsScreenSharing(false)
+        }
       },
       onParticipantToggleVideo: (participantId: string, enabled: boolean) => {
         console.log('🎥 MeetingRoom: Participant video toggled:', participantId, enabled)
@@ -339,6 +360,17 @@ export default function MeetingRoom({
     if (webRTCService.current) {
       const enabled = await webRTCService.current.toggleScreenShare()
       setIsScreenSharing(enabled)
+
+      // Update screen sharing participants set for local user
+      setScreenSharingParticipants(prev => {
+        const newSet = new Set(prev)
+        if (enabled) {
+          newSet.add('local')
+        } else {
+          newSet.delete('local')
+        }
+        return newSet
+      })
     }
   }
 
@@ -476,6 +508,7 @@ export default function MeetingRoom({
               isScreenSharing={isScreenSharing}
               currentUser={user}
               speakingParticipants={speakingParticipants}
+              screenSharingParticipants={screenSharingParticipants}
             />
           </div>
 

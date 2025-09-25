@@ -10,6 +10,7 @@ interface VideoGridProps {
   isScreenSharing: boolean
   currentUser: any
   speakingParticipants?: Set<string>
+  screenSharingParticipants?: Set<string>
 }
 
 export default function VideoGrid({
@@ -20,7 +21,8 @@ export default function VideoGrid({
   isAudioEnabled,
   isScreenSharing,
   currentUser,
-  speakingParticipants = new Set()
+  speakingParticipants = new Set(),
+  screenSharingParticipants = new Set()
 }: VideoGridProps) {
   // Add current user as a participant for display
   const allParticipants: Participant[] = [
@@ -58,20 +60,46 @@ export default function VideoGrid({
     return 'grid-rows-4 sm:grid-rows-3'
   }
 
-  if (isScreenSharing) {
+  // Check if anyone is screen sharing
+  const screenSharingUser = allParticipants.find(p => screenSharingParticipants.has(p.id))
+
+  if (screenSharingUser) {
     // Screen sharing layout: main screen + small participant tiles (mobile-optimized)
+    const screenStream = screenSharingUser.id === 'local' ? localStream : participantStreams.get(screenSharingUser.id)
+
     return (
       <div className="h-full flex flex-col space-y-2 sm:space-y-4">
         {/* Main screen sharing area */}
-        <div className="flex-1 bg-gray-800 rounded-lg flex items-center justify-center">
-          <div className="text-center text-white px-4">
-            <div className="bg-green-600 p-3 sm:p-4 rounded-full w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+        <div className="flex-1 bg-gray-900 rounded-lg overflow-hidden relative">
+          {screenStream ? (
+            <video
+              autoPlay
+              playsInline
+              muted={screenSharingUser.id === 'local'}
+              className="w-full h-full object-contain"
+              ref={(video) => {
+                if (video && screenStream) {
+                  video.srcObject = screenStream
+                }
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center text-white px-4">
+                <div className="bg-green-600 p-3 sm:p-4 rounded-full w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-base sm:text-lg font-medium mb-1 sm:mb-2">Screen Share</h3>
+                <p className="text-gray-300 text-sm">{screenSharingUser.user.firstName} is sharing their screen</p>
+              </div>
             </div>
-            <h3 className="text-base sm:text-lg font-medium mb-1 sm:mb-2">Screen Share</h3>
-            <p className="text-gray-300 text-sm">Screen sharing content will appear here</p>
+          )}
+
+          {/* Screen sharing overlay info */}
+          <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs">
+            {screenSharingUser.user.firstName} is sharing screen
           </div>
         </div>
 
