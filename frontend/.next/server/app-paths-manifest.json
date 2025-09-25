@@ -1,16 +1,16 @@
 {
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/about/page": "app/about/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/meetings/page": "app/meetings/page.js",
   "/meeting/[meetingId]/page": "app/meeting/[meetingId]/page.js",
   "/privacy/page": "app/privacy/page.js",
+  "/terms/page": "app/terms/page.js",
+  "/meetings/page": "app/meetings/page.js",
   "/profile/page": "app/profile/page.js",
   "/page": "app/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/settings/page": "app/settings/page.js",
-  "/terms/page": "app/terms/page.js",
   "/auth/register/page": "app/auth/register/page.js",
   "/auth/login/page": "app/auth/login/page.js"
 }

@@ -45,6 +45,7 @@ export default function MeetingRoom({
   const [showParticipants, setShowParticipants] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isHostMuted, setIsHostMuted] = useState(false)
 
   const webRTCService = useRef<WebRTCService | null>(null)
   const voiceDetector = useRef<VoiceActivityDetector | null>(null)
@@ -206,17 +207,19 @@ export default function MeetingRoom({
       },
       onHostMutedYou: (message: string, hostName: string) => {
         console.log('🔇 MeetingRoom: Muted by host:', hostName)
-        setError(`Muted by ${hostName}`)
-        // Update local audio state to muted
+        setIsHostMuted(true)
         setIsAudioEnabled(false)
-        // Note: The actual microphone will be handled by the WebRTC layer
+        setError(`You have been muted by ${hostName}`)
+        // Clear error after 5 seconds
+        setTimeout(() => setError(null), 5000)
       },
       onHostUnmutedYou: (message: string, hostName: string) => {
         console.log('🔊 MeetingRoom: Unmuted by host:', hostName)
-        setError(`Unmuted by ${hostName}`)
-        // Update local audio state to unmuted
+        setIsHostMuted(false)
         setIsAudioEnabled(true)
-        // Note: The actual microphone will be handled by the WebRTC layer
+        setError(`You have been unmuted by ${hostName}`)
+        // Clear error after 3 seconds
+        setTimeout(() => setError(null), 3000)
       },
       onParticipantMutedSuccess: (participantId: string) => {
         console.log('✅ MeetingRoom: Participant mute confirmed:', participantId)
@@ -306,6 +309,13 @@ export default function MeetingRoom({
 
   const handleToggleAudio = async () => {
     if (webRTCService.current) {
+      // Check if user is trying to unmute while host-muted
+      if (isHostMuted && !isAudioEnabled) {
+        setError('You have been muted by the host and cannot unmute yourself')
+        setTimeout(() => setError(null), 3000)
+        return
+      }
+
       const enabled = await webRTCService.current.toggleAudio()
       setIsAudioEnabled(enabled)
 
@@ -371,7 +381,14 @@ export default function MeetingRoom({
   }
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col">
+    <div className="h-screen bg-gray-900 flex flex-col relative">
+      {/* Error Toast */}
+      {error && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
+          <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
+
       {/* Meeting Header */}
       <div className="bg-gray-800 px-3 sm:px-4 py-2 sm:py-3">
         {/* Mobile Layout */}
@@ -455,6 +472,7 @@ export default function MeetingRoom({
               localStream={localStream}
               participantStreams={participantStreams}
               isVideoEnabled={isVideoEnabled}
+              isAudioEnabled={isAudioEnabled}
               isScreenSharing={isScreenSharing}
               currentUser={user}
               speakingParticipants={speakingParticipants}

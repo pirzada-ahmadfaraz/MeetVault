@@ -56,6 +56,7 @@ export class WebRTCService {
     audio: true,
     screenShare: false
   }
+  private hostMutedState = false
 
   private iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -201,11 +202,33 @@ export class WebRTCService {
 
     this.socket.on('host-muted-you', (data) => {
       console.log('🔇 WebRTC: Muted by host:', data.message, data.hostName)
+      this.hostMutedState = true
+
+      // Force disable audio track
+      if (this.localStream) {
+        const audioTrack = this.localStream.getAudioTracks()[0]
+        if (audioTrack) {
+          audioTrack.enabled = false
+          this.mediaControls.audio = false
+        }
+      }
+
       this.callbacks?.onHostMutedYou?.(data.message, data.hostName)
     })
 
     this.socket.on('host-unmuted-you', (data) => {
       console.log('🔊 WebRTC: Unmuted by host:', data.message, data.hostName)
+      this.hostMutedState = false
+
+      // Enable audio track
+      if (this.localStream) {
+        const audioTrack = this.localStream.getAudioTracks()[0]
+        if (audioTrack) {
+          audioTrack.enabled = true
+          this.mediaControls.audio = true
+        }
+      }
+
       this.callbacks?.onHostUnmutedYou?.(data.message, data.hostName)
     })
 
@@ -359,6 +382,10 @@ export class WebRTCService {
     return this.localStream
   }
 
+  isHostMuted(): boolean {
+    return this.hostMutedState
+  }
+
   getLocalScreenStream(): MediaStream | null {
     return this.localScreenStream
   }
@@ -384,6 +411,13 @@ export class WebRTCService {
 
   async toggleAudio(): Promise<boolean> {
     if (!this.localStream) return false
+
+    // Check if user is trying to unmute while host-muted
+    if (this.hostMutedState && !this.mediaControls.audio) {
+      // User is trying to unmute but is host-muted
+      this.callbacks?.onError?.('You have been muted by the host and cannot unmute yourself')
+      return false
+    }
 
     const audioTrack = this.localStream.getAudioTracks()[0]
     if (audioTrack) {

@@ -6,6 +6,7 @@ interface VideoGridProps {
   localStream: MediaStream | null
   participantStreams: Map<string, MediaStream>
   isVideoEnabled: boolean
+  isAudioEnabled: boolean
   isScreenSharing: boolean
   currentUser: any
   speakingParticipants?: Set<string>
@@ -16,6 +17,7 @@ export default function VideoGrid({
   localStream,
   participantStreams,
   isVideoEnabled,
+  isAudioEnabled,
   isScreenSharing,
   currentUser,
   speakingParticipants = new Set()
@@ -28,7 +30,7 @@ export default function VideoGrid({
       user: currentUser,
       isHost: false, // This will be updated based on meeting data
       isVideoEnabled,
-      isAudioEnabled: true, // This should come from WebRTC state
+      isAudioEnabled: isAudioEnabled,
       isScreenSharing: false,
       stream: localStream
     } as Participant] : []),
