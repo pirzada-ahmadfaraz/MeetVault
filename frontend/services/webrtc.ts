@@ -32,6 +32,8 @@ interface WebRTCCallbacks {
   onParticipantScreenShareStopped: (participantId: string) => void
   onParticipantToggleVideo: (participantId: string, enabled: boolean) => void
   onParticipantToggleAudio: (participantId: string, enabled: boolean) => void
+  onParticipantVoiceActivity: (participantId: string, isSpeaking: boolean) => void
+  onMeetingEnded: (message: string, hostName: string) => void
   onError: (error: string) => void
 }
 
@@ -164,6 +166,15 @@ export class WebRTCService {
 
     this.socket.on('participant-stopped-screen-share', (data) => {
       console.log('Participant stopped screen share:', data)
+    })
+
+    this.socket.on('participant-voice-activity', (data) => {
+      console.log('🗣️ WebRTC: Received voice activity:', data.userId, data.isSpeaking)
+      this.callbacks?.onParticipantVoiceActivity(data.userId, data.isSpeaking)
+    })
+    this.socket.on('meeting-ended', (data) => {
+      console.log('🚫 WebRTC: Meeting ended by host:', data.message, data.hostName)
+      this.callbacks?.onMeetingEnded(data.message, data.hostName)
     })
 
     this.socket.on('error', (error) => {
@@ -600,6 +611,24 @@ export class WebRTCService {
     return { ...this.mediaControls }
   }
 
+  broadcastVoiceActivity(isSpeaking: boolean): void {
+    if (this.socket && this.meetingId) {
+      console.log('🗣️ WebRTC: Broadcasting voice activity:', isSpeaking)
+      this.socket.emit('voice-activity', {
+        meetingId: this.meetingId,
+        isSpeaking: isSpeaking
+      })
+    }
+  }
+
+  endMeeting(): void {
+    if (this.socket && this.meetingId) {
+      console.log('🚫 WebRTC: Host ending meeting:', this.meetingId)
+      this.socket.emit('end-meeting', {
+        meetingId: this.meetingId
+      })
+    }
+  }
 
   disconnect() {
     this.leaveMeeting()

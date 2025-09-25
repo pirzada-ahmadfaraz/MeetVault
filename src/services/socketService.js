@@ -21,7 +21,7 @@ class SocketService {
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-        
+
         if (!token) {
           return next(new Error('Authentication token missing'));
         }
@@ -85,6 +85,16 @@ class SocketService {
         await this.handleStopScreenShare(socket, data);
       });
 
+      // Voice activity events
+      socket.on('voice-activity', (data) => {
+        this.handleVoiceActivity(socket, data);
+      });
+
+      // Host control events
+      socket.on('end-meeting', async (data) => {
+        await this.handleEndMeeting(socket, data);
+      });
+
       // Chat events
       socket.on('send-message', async (data) => {
         await this.handleSendMessage(socket, data);
@@ -108,7 +118,7 @@ class SocketService {
   async handleJoinMeeting(socket, data) {
     try {
       const { meetingId } = data;
-      
+
       const meeting = await Meeting.findOne({ meetingId })
         .populate('host', 'username firstName lastName')
         .populate('participants.user', 'username firstName lastName');
@@ -184,9 +194,9 @@ class SocketService {
   async handleLeaveMeeting(socket, data) {
     try {
       const { meetingId } = data;
-      
+
       socket.leave(meetingId);
-      
+
       // Notify other participants
       socket.to(meetingId).emit('user-left', {
         userId: socket.userId,
@@ -230,7 +240,7 @@ class SocketService {
   async handleToggleVideo(socket, data) {
     try {
       const { meetingId, isVideoEnabled } = data;
-      
+
       const meeting = await Meeting.findOne({ meetingId });
       if (!meeting) return;
 
@@ -257,7 +267,7 @@ class SocketService {
   async handleToggleAudio(socket, data) {
     try {
       const { meetingId, isAudioEnabled } = data;
-      
+
       const meeting = await Meeting.findOne({ meetingId });
       if (!meeting) return;
 
@@ -284,7 +294,7 @@ class SocketService {
   async handleStartScreenShare(socket, data) {
     try {
       const { meetingId } = data;
-      
+
       const meeting = await Meeting.findOne({ meetingId });
       if (!meeting) return;
 
@@ -320,7 +330,7 @@ class SocketService {
   async handleStopScreenShare(socket, data) {
     try {
       const { meetingId } = data;
-      
+
       const meeting = await Meeting.findOne({ meetingId });
       if (!meeting) return;
 
@@ -343,10 +353,68 @@ class SocketService {
     }
   }
 
+  handleVoiceActivity(socket, data) {
+    try {
+      const { meetingId, isSpeaking } = data;
+
+      console.log(`Voice activity from ${socket.user.username}:`, isSpeaking);
+
+      // Broadcast voice activity to all other participants in the meeting
+      socket.to(meetingId).emit('participant-voice-activity', {
+        userId: socket.userId,
+        isSpeaking
+      });
+    } catch (error) {
+      console.error('Voice activity error:', error);
+    }
+  }
+
+  async handleEndMeeting(socket, data) {
+    try {
+      const { meetingId } = data;
+
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) {
+        socket.emit('error', { message: 'Meeting not found' });
+        return;
+      }
+
+      // Check if user is the host
+      const isHost = meeting.host._id.toString() === socket.userId;
+      if (!isHost) {
+        socket.emit('error', { message: 'Only the host can end the meeting' });
+        return;
+      }
+
+      // Update meeting status to ended
+      meeting.status = 'completed';
+      meeting.endedAt = new Date();
+      await meeting.save();
+
+      console.log(`Host ${socket.user.username} ended meeting ${meetingId}`);
+
+      // Notify all participants that the meeting has ended
+      this.io.to(meetingId).emit('meeting-ended', {
+        message: 'The meeting has been ended by the host',
+        hostName: `${socket.user.firstName} ${socket.user.lastName}`
+      });
+
+      // Remove all participants from the meeting room
+      const connectedSockets = await this.io.in(meetingId).fetchSockets();
+      for (const connectedSocket of connectedSockets) {
+        connectedSocket.leave(meetingId);
+        connectedSocket.currentMeeting = null;
+      }
+    } catch (error) {
+      console.error('End meeting error:', error);
+      socket.emit('error', { message: 'Failed to end meeting' });
+    }
+  }
+
   async handleSendMessage(socket, data) {
     try {
       const { meetingId, content, replyTo } = data;
-      
+
       const meeting = await Meeting.findOne({ meetingId });
       if (!meeting) {
         socket.emit('error', { message: 'Meeting not found' });
@@ -402,7 +470,7 @@ class SocketService {
 
   handleDisconnect(socket) {
     console.log(`User ${socket.user.username} disconnected`);
-    
+
     if (socket.currentMeeting) {
       // Notify other participants that user disconnected
       socket.to(socket.currentMeeting).emit('user-disconnected', {

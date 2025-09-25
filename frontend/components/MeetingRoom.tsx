@@ -120,14 +120,56 @@ export default function MeetingRoom({
         // Handle screen share stop
       },
       onParticipantToggleVideo: (participantId: string, enabled: boolean) => {
+        console.log('🎥 MeetingRoom: Participant video toggled:', participantId, enabled)
+
+        // Update participants list
         setParticipants(prev =>
           prev.map(p => p.id === participantId ? { ...p, isVideoEnabled: enabled } : p)
         )
+
+        // If this is the current user, update local state too
+        if (user && (participantId === user._id || participantId === 'local')) {
+          console.log('🎥 MeetingRoom: Updating local video state:', enabled)
+          setIsVideoEnabled(enabled)
+        }
       },
       onParticipantToggleAudio: (participantId: string, enabled: boolean) => {
+        console.log('🎤 MeetingRoom: Participant audio toggled:', participantId, enabled)
+
+        // Update participants list
         setParticipants(prev =>
           prev.map(p => p.id === participantId ? { ...p, isAudioEnabled: enabled } : p)
         )
+
+        // If this is the current user, update local state too
+        if (user && (participantId === user._id || participantId === 'local')) {
+          console.log('🎤 MeetingRoom: Updating local audio state:', enabled)
+          setIsAudioEnabled(enabled)
+
+          // Handle voice detection state
+          if (!enabled && voiceDetector.current) {
+            voiceDetector.current.stopDetection()
+            setSpeakingParticipants(prev => {
+              const newSet = new Set(prev)
+              newSet.delete('local')
+              return newSet
+            })
+          } else if (enabled && localStream && voiceDetector.current) {
+            voiceDetector.current.startDetection()
+          }
+        }
+      },
+      onParticipantVoiceActivity: (participantId: string, isSpeaking: boolean) => {
+        console.log('🗣️ MeetingRoom: Participant voice activity:', participantId, isSpeaking)
+        setSpeakingParticipants(prev => {
+          const newSet = new Set(prev)
+          if (isSpeaking) {
+            newSet.add(participantId)
+          } else {
+            newSet.delete(participantId)
+          }
+          return newSet
+        })
       },
       onError: (error: string) => {
         console.error('WebRTC error:', error)
@@ -158,6 +200,7 @@ export default function MeetingRoom({
 
       if (success) {
         voiceDetector.current.addCallback((isSpeaking: boolean) => {
+          // Update local state
           setSpeakingParticipants(prev => {
             const newSet = new Set(prev)
             if (isSpeaking) {
@@ -167,6 +210,11 @@ export default function MeetingRoom({
             }
             return newSet
           })
+
+          // Broadcast voice activity to other participants
+          if (webRTCService.current) {
+            webRTCService.current.broadcastVoiceActivity(isSpeaking)
+          }
         })
         console.log('Voice activity detection initialized successfully')
       } else {
