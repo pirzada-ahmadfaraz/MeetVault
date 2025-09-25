@@ -8,7 +8,8 @@ import {
   PhoneXMarkIcon,
   Cog6ToothIcon,
   UserGroupIcon,
-  XMarkIcon
+  XMarkIcon,
+  StopIcon
 } from '@heroicons/react/24/outline'
 
 interface MeetingControlsProps {
@@ -23,6 +24,7 @@ interface MeetingControlsProps {
   isHost: boolean
   onShowParticipants?: () => void
   onShowSettings?: () => void
+  onEndMeeting?: () => void
 }
 
 export default function MeetingControls({
@@ -36,7 +38,8 @@ export default function MeetingControls({
   onLeave,
   isHost,
   onShowParticipants,
-  onShowSettings
+  onShowSettings,
+  onEndMeeting
 }: MeetingControlsProps) {
   return (
     <div>
@@ -116,6 +119,17 @@ export default function MeetingControls({
               title="Manage participants"
             >
               <UserGroupIcon className="h-4 w-4" />
+            </button>
+          )}
+
+          {/* End Meeting (Host only) */}
+          {isHost && onEndMeeting && (
+            <button
+              onClick={onEndMeeting}
+              className="p-2.5 rounded-full bg-red-600 text-white transition-colors"
+              title="End meeting for everyone"
+            >
+              <StopIcon className="h-4 w-4" />
             </button>
           )}
 
@@ -203,6 +217,17 @@ export default function MeetingControls({
         >
           <Cog6ToothIcon className="h-6 w-6" />
         </button>
+
+        {/* End Meeting (Host only) */}
+        {isHost && onEndMeeting && (
+          <button
+            onClick={onEndMeeting}
+            className="p-4 rounded-full bg-red-800 hover:bg-red-900 text-white transition-colors"
+            title="End meeting for everyone"
+          >
+            <StopIcon className="h-6 w-6" />
+          </button>
+        )}
 
         {/* Leave Meeting */}
         <button

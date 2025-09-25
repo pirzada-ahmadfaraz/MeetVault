@@ -95,6 +95,18 @@ class SocketService {
         await this.handleEndMeeting(socket, data);
       });
 
+      socket.on('remove-participant', async (data) => {
+        await this.handleRemoveParticipant(socket, data);
+      });
+
+      socket.on('host-mute-participant', async (data) => {
+        await this.handleHostMuteParticipant(socket, data);
+      });
+
+      socket.on('host-unmute-participant', async (data) => {
+        await this.handleHostUnmuteParticipant(socket, data);
+      });
+
       // Chat events
       socket.on('send-message', async (data) => {
         await this.handleSendMessage(socket, data);
@@ -408,6 +420,214 @@ class SocketService {
     } catch (error) {
       console.error('End meeting error:', error);
       socket.emit('error', { message: 'Failed to end meeting' });
+    }
+  }
+
+  async handleRemoveParticipant(socket, data) {
+    try {
+      const { meetingId, participantId } = data;
+
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) {
+        socket.emit('error', { message: 'Meeting not found' });
+        return;
+      }
+
+      // Check if user is the host
+      const isHost = meeting.host._id.toString() === socket.userId;
+      if (!isHost) {
+        socket.emit('error', { message: 'Only the host can remove participants' });
+        return;
+      }
+
+      // Cannot remove the host
+      if (participantId === socket.userId) {
+        socket.emit('error', { message: 'Host cannot remove themselves' });
+        return;
+      }
+
+      // Find the participant to remove
+      const participantToRemove = meeting.participants.find(
+        p => p.user.toString() === participantId && !p.leftAt
+      );
+
+      if (!participantToRemove) {
+        socket.emit('error', { message: 'Participant not found in meeting' });
+        return;
+      }
+
+      // Update participant status to left
+      participantToRemove.leftAt = new Date();
+      await meeting.save();
+
+      console.log(`Host ${socket.user.username} removed participant ${participantId} from meeting ${meetingId}`);
+
+      // Find and disconnect the participant's socket
+      const participantSockets = this.getUserSockets(participantId);
+      for (const participantSocket of participantSockets) {
+        if (participantSocket.currentMeeting === meetingId) {
+          // Notify the removed participant
+          participantSocket.emit('removed-from-meeting', {
+            message: 'You have been removed from the meeting by the host',
+            hostName: `${socket.user.firstName} ${socket.user.lastName}`
+          });
+
+          // Remove from meeting room
+          participantSocket.leave(meetingId);
+          participantSocket.currentMeeting = null;
+        }
+      }
+
+      // Notify other participants about the removal
+      socket.to(meetingId).emit('participant-removed', {
+        participantId,
+        removedBy: socket.userId
+      });
+
+      // Confirm removal to the host
+      socket.emit('participant-removed-success', {
+        participantId
+      });
+
+    } catch (error) {
+      console.error('Remove participant error:', error);
+      socket.emit('error', { message: 'Failed to remove participant' });
+    }
+  }
+
+  async handleHostMuteParticipant(socket, data) {
+    try {
+      const { meetingId, participantId } = data;
+
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) {
+        socket.emit('error', { message: 'Meeting not found' });
+        return;
+      }
+
+      // Check if user is the host
+      const isHost = meeting.host._id.toString() === socket.userId;
+      if (!isHost) {
+        socket.emit('error', { message: 'Only the host can mute participants' });
+        return;
+      }
+
+      // Cannot mute the host
+      if (participantId === socket.userId) {
+        socket.emit('error', { message: 'Host cannot mute themselves' });
+        return;
+      }
+
+      // Find the participant to mute
+      const participantToMute = meeting.participants.find(
+        p => p.user.toString() === participantId && !p.leftAt
+      );
+
+      if (!participantToMute) {
+        socket.emit('error', { message: 'Participant not found in meeting' });
+        return;
+      }
+
+      // Update participant audio status to muted
+      participantToMute.isAudioEnabled = false;
+      await meeting.save();
+
+      console.log(`Host ${socket.user.username} muted participant ${participantId} in meeting ${meetingId}`);
+
+      // Notify the muted participant
+      const participantSockets = this.getUserSockets(participantId);
+      for (const participantSocket of participantSockets) {
+        if (participantSocket.currentMeeting === meetingId) {
+          participantSocket.emit('host-muted-you', {
+            message: 'You have been muted by the host',
+            hostName: `${socket.user.firstName} ${socket.user.lastName}`
+          });
+        }
+      }
+
+      // Notify all participants about the mute
+      this.io.to(meetingId).emit('participant-audio-toggled', {
+        userId: participantId,
+        isAudioEnabled: false,
+        mutedByHost: true
+      });
+
+      // Confirm to host
+      socket.emit('participant-muted-success', {
+        participantId
+      });
+
+    } catch (error) {
+      console.error('Host mute participant error:', error);
+      socket.emit('error', { message: 'Failed to mute participant' });
+    }
+  }
+
+  async handleHostUnmuteParticipant(socket, data) {
+    try {
+      const { meetingId, participantId } = data;
+
+      const meeting = await Meeting.findOne({ meetingId });
+      if (!meeting) {
+        socket.emit('error', { message: 'Meeting not found' });
+        return;
+      }
+
+      // Check if user is the host
+      const isHost = meeting.host._id.toString() === socket.userId;
+      if (!isHost) {
+        socket.emit('error', { message: 'Only the host can unmute participants' });
+        return;
+      }
+
+      // Cannot unmute the host
+      if (participantId === socket.userId) {
+        socket.emit('error', { message: 'Host cannot unmute themselves' });
+        return;
+      }
+
+      // Find the participant to unmute
+      const participantToUnmute = meeting.participants.find(
+        p => p.user.toString() === participantId && !p.leftAt
+      );
+
+      if (!participantToUnmute) {
+        socket.emit('error', { message: 'Participant not found in meeting' });
+        return;
+      }
+
+      // Update participant audio status to unmuted
+      participantToUnmute.isAudioEnabled = true;
+      await meeting.save();
+
+      console.log(`Host ${socket.user.username} unmuted participant ${participantId} in meeting ${meetingId}`);
+
+      // Notify the unmuted participant
+      const participantSockets = this.getUserSockets(participantId);
+      for (const participantSocket of participantSockets) {
+        if (participantSocket.currentMeeting === meetingId) {
+          participantSocket.emit('host-unmuted-you', {
+            message: 'You have been unmuted by the host',
+            hostName: `${socket.user.firstName} ${socket.user.lastName}`
+          });
+        }
+      }
+
+      // Notify all participants about the unmute
+      this.io.to(meetingId).emit('participant-audio-toggled', {
+        userId: participantId,
+        isAudioEnabled: true,
+        unmutedByHost: true
+      });
+
+      // Confirm to host
+      socket.emit('participant-unmuted-success', {
+        participantId
+      });
+
+    } catch (error) {
+      console.error('Host unmute participant error:', error);
+      socket.emit('error', { message: 'Failed to unmute participant' });
     }
   }
 

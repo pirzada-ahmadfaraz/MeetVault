@@ -11,7 +11,10 @@ import MeetingControls from './MeetingControls'
 import MeetingJoinPrompt from './MeetingJoinPrompt'
 import {
   ChatBubbleLeftRightIcon,
-  XMarkIcon
+  XMarkIcon,
+  MinusCircleIcon,
+  MicrophoneIcon,
+  SpeakerXMarkIcon
 } from '@heroicons/react/24/outline'
 
 interface MeetingRoomProps {
@@ -171,6 +174,58 @@ export default function MeetingRoom({
           return newSet
         })
       },
+      onMeetingEnded: (hostName: string) => {
+        console.log('🚫 MeetingRoom: Meeting ended by host:', hostName)
+        setError(`Meeting ended by ${hostName}`)
+        // Automatically leave the meeting after a brief delay
+        setTimeout(() => {
+          onLeave()
+        }, 3000)
+      },
+      onRemovedFromMeeting: (message: string, hostName: string) => {
+        console.log('❌ MeetingRoom: Removed from meeting by host:', hostName)
+        setError(`Removed by ${hostName}`)
+        // Automatically leave the meeting after a brief delay
+        setTimeout(() => {
+          onLeave()
+        }, 3000)
+      },
+      onParticipantRemoved: (participantId: string, removedBy: string) => {
+        console.log('❌ MeetingRoom: Participant removed:', participantId, 'by:', removedBy)
+        // Remove participant from local state
+        setParticipants(prev => prev.filter(p => p.id !== participantId))
+        setParticipantStreams(prev => {
+          const newMap = new Map(prev)
+          newMap.delete(participantId)
+          return newMap
+        })
+      },
+      onParticipantRemovedSuccess: (participantId: string) => {
+        console.log('✅ MeetingRoom: Participant removal confirmed:', participantId)
+        // Participant should already be removed from onParticipantRemoved callback
+      },
+      onHostMutedYou: (message: string, hostName: string) => {
+        console.log('🔇 MeetingRoom: Muted by host:', hostName)
+        setError(`Muted by ${hostName}`)
+        // Update local audio state to muted
+        setIsAudioEnabled(false)
+        // Note: The actual microphone will be handled by the WebRTC layer
+      },
+      onHostUnmutedYou: (message: string, hostName: string) => {
+        console.log('🔊 MeetingRoom: Unmuted by host:', hostName)
+        setError(`Unmuted by ${hostName}`)
+        // Update local audio state to unmuted
+        setIsAudioEnabled(true)
+        // Note: The actual microphone will be handled by the WebRTC layer
+      },
+      onParticipantMutedSuccess: (participantId: string) => {
+        console.log('✅ MeetingRoom: Participant mute confirmed:', participantId)
+        // Participant should already be updated from onParticipantToggleAudio callback
+      },
+      onParticipantUnmutedSuccess: (participantId: string) => {
+        console.log('✅ MeetingRoom: Participant unmute confirmed:', participantId)
+        // Participant should already be updated from onParticipantToggleAudio callback
+      },
       onError: (error: string) => {
         console.error('WebRTC error:', error)
         setError(error)
@@ -274,6 +329,34 @@ export default function MeetingRoom({
     if (webRTCService.current) {
       const enabled = await webRTCService.current.toggleScreenShare()
       setIsScreenSharing(enabled)
+    }
+  }
+
+  const handleEndMeeting = () => {
+    if (webRTCService.current && isHost) {
+      console.log('🚫 MeetingRoom: Host ending meeting')
+      webRTCService.current.endMeeting()
+    }
+  }
+
+  const handleRemoveParticipant = (participantId: string) => {
+    if (webRTCService.current && isHost) {
+      console.log('❌ MeetingRoom: Host removing participant:', participantId)
+      webRTCService.current.removeParticipant(participantId)
+    }
+  }
+
+  const handleMuteParticipant = (participantId: string) => {
+    if (webRTCService.current && isHost) {
+      console.log('🔇 MeetingRoom: Host muting participant:', participantId)
+      webRTCService.current.hostMuteParticipant(participantId)
+    }
+  }
+
+  const handleUnmuteParticipant = (participantId: string) => {
+    if (webRTCService.current && isHost) {
+      console.log('🔊 MeetingRoom: Host unmuting participant:', participantId)
+      webRTCService.current.hostUnmuteParticipant(participantId)
     }
   }
 
@@ -392,6 +475,7 @@ export default function MeetingRoom({
               isHost={isHost}
               onShowParticipants={handleShowParticipants}
               onShowSettings={handleShowSettings}
+              onEndMeeting={handleEndMeeting}
             />
           </div>
         </div>
@@ -457,6 +541,37 @@ export default function MeetingRoom({
                       <div className={`w-3 h-3 rounded-full ${participant.isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={participant.isAudioEnabled ? 'Audio on' : 'Audio off'}></div>
                       <div className={`w-3 h-3 rounded-full ${participant.isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={participant.isVideoEnabled ? 'Video on' : 'Video off'}></div>
                     </div>
+                    {/* Host controls */}
+                    {isHost && (
+                      <div className="flex items-center space-x-1">
+                        {/* Mute/Unmute button */}
+                        {participant.isAudioEnabled ? (
+                          <button
+                            onClick={() => handleMuteParticipant(participant.id)}
+                            className="text-yellow-400 hover:text-yellow-300 p-1 rounded-full hover:bg-yellow-900/30 transition-colors"
+                            title="Mute participant"
+                          >
+                            <SpeakerXMarkIcon className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleUnmuteParticipant(participant.id)}
+                            className="text-green-400 hover:text-green-300 p-1 rounded-full hover:bg-green-900/30 transition-colors"
+                            title="Unmute participant"
+                          >
+                            <MicrophoneIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {/* Remove button */}
+                        <button
+                          onClick={() => handleRemoveParticipant(participant.id)}
+                          className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-red-900/30 transition-colors"
+                          title="Remove participant"
+                        >
+                          <MinusCircleIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

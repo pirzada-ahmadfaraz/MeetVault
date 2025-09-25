@@ -34,6 +34,13 @@ interface WebRTCCallbacks {
   onParticipantToggleAudio: (participantId: string, enabled: boolean) => void
   onParticipantVoiceActivity: (participantId: string, isSpeaking: boolean) => void
   onMeetingEnded: (message: string, hostName: string) => void
+  onRemovedFromMeeting?: (message: string, hostName: string) => void
+  onParticipantRemoved?: (participantId: string, removedBy: string) => void
+  onParticipantRemovedSuccess?: (participantId: string) => void
+  onHostMutedYou?: (message: string, hostName: string) => void
+  onHostUnmutedYou?: (message: string, hostName: string) => void
+  onParticipantMutedSuccess?: (participantId: string) => void
+  onParticipantUnmutedSuccess?: (participantId: string) => void
   onError: (error: string) => void
 }
 
@@ -175,6 +182,41 @@ export class WebRTCService {
     this.socket.on('meeting-ended', (data) => {
       console.log('🚫 WebRTC: Meeting ended by host:', data.message, data.hostName)
       this.callbacks?.onMeetingEnded(data.message, data.hostName)
+    })
+
+    this.socket.on('removed-from-meeting', (data) => {
+      console.log('❌ WebRTC: Removed from meeting by host:', data.message, data.hostName)
+      this.callbacks?.onRemovedFromMeeting?.(data.message, data.hostName)
+    })
+
+    this.socket.on('participant-removed', (data) => {
+      console.log('❌ WebRTC: Participant removed:', data.participantId, 'by:', data.removedBy)
+      this.callbacks?.onParticipantRemoved?.(data.participantId, data.removedBy)
+    })
+
+    this.socket.on('participant-removed-success', (data) => {
+      console.log('✅ WebRTC: Participant removal confirmed:', data.participantId)
+      this.callbacks?.onParticipantRemovedSuccess?.(data.participantId)
+    })
+
+    this.socket.on('host-muted-you', (data) => {
+      console.log('🔇 WebRTC: Muted by host:', data.message, data.hostName)
+      this.callbacks?.onHostMutedYou?.(data.message, data.hostName)
+    })
+
+    this.socket.on('host-unmuted-you', (data) => {
+      console.log('🔊 WebRTC: Unmuted by host:', data.message, data.hostName)
+      this.callbacks?.onHostUnmutedYou?.(data.message, data.hostName)
+    })
+
+    this.socket.on('participant-muted-success', (data) => {
+      console.log('✅ WebRTC: Participant mute confirmed:', data.participantId)
+      this.callbacks?.onParticipantMutedSuccess?.(data.participantId)
+    })
+
+    this.socket.on('participant-unmuted-success', (data) => {
+      console.log('✅ WebRTC: Participant unmute confirmed:', data.participantId)
+      this.callbacks?.onParticipantUnmutedSuccess?.(data.participantId)
     })
 
     this.socket.on('error', (error) => {
@@ -626,6 +668,36 @@ export class WebRTCService {
       console.log('🚫 WebRTC: Host ending meeting:', this.meetingId)
       this.socket.emit('end-meeting', {
         meetingId: this.meetingId
+      })
+    }
+  }
+
+  removeParticipant(participantId: string): void {
+    if (this.socket && this.meetingId) {
+      console.log('❌ WebRTC: Host removing participant:', participantId)
+      this.socket.emit('remove-participant', {
+        meetingId: this.meetingId,
+        participantId: participantId
+      })
+    }
+  }
+
+  hostMuteParticipant(participantId: string): void {
+    if (this.socket && this.meetingId) {
+      console.log('🔇 WebRTC: Host muting participant:', participantId)
+      this.socket.emit('host-mute-participant', {
+        meetingId: this.meetingId,
+        participantId: participantId
+      })
+    }
+  }
+
+  hostUnmuteParticipant(participantId: string): void {
+    if (this.socket && this.meetingId) {
+      console.log('🔊 WebRTC: Host unmuting participant:', participantId)
+      this.socket.emit('host-unmute-participant', {
+        meetingId: this.meetingId,
+        participantId: participantId
       })
     }
   }
