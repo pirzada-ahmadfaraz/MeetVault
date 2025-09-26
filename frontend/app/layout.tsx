@@ -12,7 +12,19 @@ export const metadata: Metadata = {
   title: 'MeetVault - Connect & Collaborate',
   description: 'Modern video conferencing platform for seamless communication',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      {
+        url: '/icon.png',
+        sizes: 'any',
+      },
+      {
+        url: '/favicon.ico',
+        sizes: '16x16',
+        type: 'image/x-icon',
+      },
+    ],
+    apple: '/icon.png',
+    shortcut: '/icon.png',
   },
 }
 
