@@ -194,7 +194,7 @@ export default function MeetingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">This meeting has ended</n>
+            <h2 className="text-xl font-semibold text-white mb-2">This meeting has ended</h2>
             <p className="text-gray-300 mb-6">The host has ended this meeting. You can return to your dashboard.</p>
             <div>
               <button
