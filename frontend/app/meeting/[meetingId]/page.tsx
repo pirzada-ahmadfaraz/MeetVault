@@ -22,11 +22,19 @@ export default function MeetingPage() {
 
   useEffect(() => {
     if (meetingId) {
-      // Check if user was previously in this meeting (session storage)
-      const wasInMeeting = sessionStorage.getItem(`meeting-joined-${meetingId}`)
-      if (wasInMeeting === 'true') {
-        setHasJoined(true)
-      }
+      // Check persisted join state across tabs with TTL
+      try {
+        const raw = localStorage.getItem(`meeting-joined-${meetingId}`)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          const now = Date.now()
+          if (parsed && parsed.joined === true && (!parsed.expiresAt || parsed.expiresAt > now)) {
+            setHasJoined(true)
+          } else if (parsed && parsed.expiresAt && parsed.expiresAt <= now) {
+            localStorage.removeItem(`meeting-joined-${meetingId}`)
+          }
+        }
+      } catch {}
       loadMeeting()
     }
   }, [meetingId])
@@ -42,7 +50,15 @@ export default function MeetingPage() {
         setMeeting(response.data)
         
         // Check if user is already a participant or was previously in the meeting
-        const wasInMeeting = sessionStorage.getItem(`meeting-joined-${meetingId}`) === 'true'
+        let wasInMeeting = false
+        try {
+          const raw = localStorage.getItem(`meeting-joined-${meetingId}`)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            const now = Date.now()
+            wasInMeeting = parsed && parsed.joined === true && (!parsed.expiresAt || parsed.expiresAt > now)
+          }
+        } catch {}
         const isActiveParticipant = response.data.participants.some(
           p => p.user._id === user?._id && !p.leftAt
         )
@@ -71,13 +87,27 @@ export default function MeetingPage() {
       if (response.success) {
         setMeeting(response.data)
         setHasJoined(true)
-        // Store in session storage to remember user joined this meeting
-        sessionStorage.setItem(`meeting-joined-${meetingId}`, 'true')
+        // Persist join across reloads/tabs with TTL (2 hours)
+        const expiresAt = Date.now() + 2 * 60 * 60 * 1000
+        localStorage.setItem(`meeting-joined-${meetingId}`, JSON.stringify({ joined: true, expiresAt }))
       } else {
         setError(response.message)
       }
     } catch (error: any) {
       console.error('Error joining meeting:', error)
+      // Treat duplicate join as success for refresh/new tab flows
+      if (error?.response?.status === 409 && /already in this meeting/i.test(error?.response?.data?.message || '')) {
+        setHasJoined(true)
+        // Set a short TTL if we didn't have one yet
+        const fallbackExpires = Date.now() + 60 * 60 * 1000
+        try {
+          const raw = localStorage.getItem(`meeting-joined-${meetingId}`)
+          if (!raw) {
+            localStorage.setItem(`meeting-joined-${meetingId}`, JSON.stringify({ joined: true, expiresAt: fallbackExpires }))
+          }
+        } catch {}
+        return
+      }
       setError(error.response?.data?.message || 'Failed to join meeting. Please try again.')
     }
   }
@@ -85,13 +115,13 @@ export default function MeetingPage() {
   const handleLeaveMeeting = async () => {
     try {
       await meetingAPI.leaveMeeting(meetingId)
-      // Clear session storage when user explicitly leaves
-      sessionStorage.removeItem(`meeting-joined-${meetingId}`)
+      // Clear persisted state when user explicitly leaves
+      localStorage.removeItem(`meeting-joined-${meetingId}`)
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Error leaving meeting:', error)
-      // Even if API call fails, clear session and redirect
-      sessionStorage.removeItem(`meeting-joined-${meetingId}`)
+      // Even if API call fails, clear persisted state and redirect
+      localStorage.removeItem(`meeting-joined-${meetingId}`)
       router.push('/dashboard')
     }
   }
