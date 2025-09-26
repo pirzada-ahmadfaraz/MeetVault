@@ -491,9 +491,10 @@ export class WebRTCService {
         return false
       } else {
         // Start screen sharing
+        // Do NOT capture screen audio to avoid unintended microphone/system audio leakage
         this.localScreenStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
-          audio: true
+          audio: false
         })
 
         this.mediaControls.screenShare = true
@@ -529,7 +530,6 @@ export class WebRTCService {
 
         // Replace video track in all peer connections with screen share track
         const screenTrack = this.localScreenStream.getVideoTracks()[0]
-        const audioTrack = this.localScreenStream.getAudioTracks()[0]
 
         for (const [participantId, peerConnection] of this.peerConnections) {
           const sender = peerConnection.getSenders().find(s => s.track?.kind === 'video')
@@ -538,14 +538,7 @@ export class WebRTCService {
             console.log('🖥️ WebRTC: Replaced video track with screen share for:', participantId)
           }
 
-          // Add audio track if available
-          if (audioTrack) {
-            const audioSender = peerConnection.getSenders().find(s => s.track?.kind === 'audio' && s.track !== audioTrack)
-            if (!audioSender) {
-              peerConnection.addTrack(audioTrack, this.localScreenStream)
-              console.log('🎤 WebRTC: Added screen share audio for:', participantId)
-            }
-          }
+          // Do not add screen share audio; preserve user's mic mute state strictly
         }
 
         // Notify other participants
