@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { 
@@ -29,9 +30,14 @@ export default function Navbar() {
           {/* Logo and brand */}
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-2">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <VideoCameraIcon className="h-6 w-6 text-white" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={28}
+                height={28}
+                className="rounded-md"
+                priority
+              />
               <span className="text-xl font-bold text-gray-900 dark:text-white">MeetVault</span>
             </Link>
           </div>
