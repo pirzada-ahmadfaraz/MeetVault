@@ -21,21 +21,37 @@ export default function ChatPanel({ meetingId }: ChatPanelProps) {
   const [isSending, setIsSending] = useState(false)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
   const [error, setError] = useState('')
+  const [hasMoreMessages, setHasMoreMessages] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const newMessageCallbackRef = useRef<((message: ChatMessage) => void) | null>(null)
+  const typingStartCallbackRef = useRef<(({ userId, user }: { userId: string; user: any }) => void) | null>(null)
+  const typingStopCallbackRef = useRef<(({ userId }: { userId: string }) => void) | null>(null)
 
   useEffect(() => {
     loadMessages()
     setupSocketListeners()
 
     return () => {
-      socketService.off('new-message')
-      socketService.off('user-typing-start')
-      socketService.off('user-typing-stop')
+      // Clean up socket listeners with specific callbacks
+      if (newMessageCallbackRef.current) {
+        socketService.off('new-message', newMessageCallbackRef.current)
+      }
+      if (typingStartCallbackRef.current) {
+        socketService.off('user-typing-start', typingStartCallbackRef.current)
+      }
+      if (typingStopCallbackRef.current) {
+        socketService.off('user-typing-stop', typingStopCallbackRef.current)
+      }
+
+      // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
       }
+
+      console.log('🧹 ChatPanel: Cleaned up socket listeners for meeting:', meetingId)
     }
   }, [meetingId])
 
@@ -43,13 +59,27 @@ export default function ChatPanel({ meetingId }: ChatPanelProps) {
     scrollToBottom()
   }, [messages])
 
-  const loadMessages = async () => {
+  const loadMessages = async (page: number = 1, append: boolean = false) => {
     try {
-      setIsLoading(true)
-      const response = await chatAPI.getMessages(meetingId, 1, 50)
-      
+      if (!append) setIsLoading(true)
+
+      // Load more messages per page to ensure history is preserved
+      const response = await chatAPI.getMessages(meetingId, page, 100)
+
       if (response.success) {
-        setMessages(response.data.reverse()) // API returns newest first, we want oldest first
+        const newMessages = response.data.reverse() // API returns newest first, we want oldest first
+
+        if (append) {
+          // Append older messages to the beginning
+          setMessages(prev => [...newMessages, ...prev])
+        } else {
+          // Replace all messages (initial load)
+          setMessages(newMessages)
+        }
+
+        // Check if there are more messages
+        setHasMoreMessages(response.data.length === 100)
+        setCurrentPage(page)
       } else {
         setError('Failed to load messages')
       }
@@ -62,44 +92,131 @@ export default function ChatPanel({ meetingId }: ChatPanelProps) {
   }
 
   const setupSocketListeners = () => {
-    socketService.onNewMessage((message: ChatMessage) => {
-      setMessages(prev => [...prev, message])
-    })
+    // Clean up existing listeners first
+    if (newMessageCallbackRef.current) {
+      socketService.off('new-message', newMessageCallbackRef.current)
+    }
+    if (typingStartCallbackRef.current) {
+      socketService.off('user-typing-start', typingStartCallbackRef.current)
+    }
+    if (typingStopCallbackRef.current) {
+      socketService.off('user-typing-stop', typingStopCallbackRef.current)
+    }
 
-    socketService.onUserTypingStart(({ userId, user: typingUser }) => {
+    // Create new callback functions and store references
+    newMessageCallbackRef.current = (message: ChatMessage) => {
+      console.log('📬 ChatPanel: Received new message:', message.content)
+      setMessages(prev => {
+        // Check if this is replacing an optimistic message (from the same user)
+        const optimisticIndex = prev.findIndex(msg =>
+          msg._id.startsWith('temp-') &&
+          msg.content === message.content &&
+          msg.sender._id === message.sender._id
+        )
+
+        if (optimisticIndex !== -1) {
+          console.log('📬 ChatPanel: Replacing optimistic message with real message')
+          // Replace the optimistic message with the real one
+          const newMessages = [...prev]
+          newMessages[optimisticIndex] = message
+          return newMessages
+        }
+
+        // Prevent duplicate messages
+        const isDuplicate = prev.some(msg => msg._id === message._id)
+        if (isDuplicate) {
+          console.log('📬 ChatPanel: Duplicate message detected, ignoring')
+          return prev
+        }
+
+        const newMessages = [...prev, message]
+        console.log('📬 ChatPanel: Updated messages count:', newMessages.length)
+        return newMessages
+      })
+    }
+
+    typingStartCallbackRef.current = ({ userId, user: typingUser }) => {
       if (userId !== user?._id) {
+        console.log('⌨️ ChatPanel: User started typing:', typingUser.username)
         setTypingUsers(prev => new Set([...prev, typingUser.username]))
       }
-    })
+    }
 
-    socketService.onUserTypingStop(({ userId }) => {
+    typingStopCallbackRef.current = ({ userId }) => {
+      console.log('⌨️ ChatPanel: User stopped typing:', userId)
       setTypingUsers(prev => {
         const newSet = new Set(prev)
-        // We need to find the username by userId, but for simplicity, we'll clear after timeout
+        // Clear typing users after a timeout since we don't have username mapping
+        setTimeout(() => {
+          setTypingUsers(new Set())
+        }, 1000)
         return newSet
       })
-    })
+    }
+
+    // Set up listeners with the new callbacks
+    socketService.onNewMessage(newMessageCallbackRef.current)
+    socketService.onUserTypingStart(typingStartCallbackRef.current)
+    socketService.onUserTypingStop(typingStopCallbackRef.current)
+
+    console.log('🔌 ChatPanel: Socket listeners set up for meeting:', meetingId)
   }
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!newMessage.trim() || isSending) return
+
+    if (!newMessage.trim() || isSending || !user) return
 
     setIsSending(true)
     const messageContent = newMessage.trim()
+    const tempId = `temp-${Date.now()}-${Math.random()}`
+
+    // Optimistic update - add message immediately to UI
+    const optimisticMessage: ChatMessage = {
+      _id: tempId,
+      content: messageContent,
+      sender: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        isActive: user.isActive,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+      meeting: meetingId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messageType: 'text',
+      isDeleted: false,
+      isEdited: false,
+      editedAt: null,
+      deletedAt: null,
+      replyTo: null,
+      readBy: [],
+      reactions: [],
+      reactionSummary: {}
+    }
+
+    setMessages(prev => [...prev, optimisticMessage])
     setNewMessage('')
 
     try {
+      console.log('📤 ChatPanel: Sending message via socket:', messageContent)
       // Send via Socket.IO for real-time delivery
       socketService.sendMessage(meetingId, messageContent)
-      
-      // Also send via API for persistence (optional, as socket handler should save it)
-      // await chatAPI.sendMessage(meetingId, { content: messageContent })
+
     } catch (error: any) {
-      console.error('Error sending message:', error)
+      console.error('❌ ChatPanel: Error sending message:', error)
       setError('Failed to send message')
-      setNewMessage(messageContent) // Restore message on error
+
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg._id !== tempId))
+
+      // Restore message content
+      setNewMessage(messageContent)
     } finally {
       setIsSending(false)
     }
@@ -159,6 +276,19 @@ export default function ChatPanel({ meetingId }: ChatPanelProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
+        {/* Load More Messages Button */}
+        {hasMoreMessages && messages.length > 0 && (
+          <div className="text-center">
+            <button
+              onClick={() => loadMessages(currentPage + 1, true)}
+              className="text-blue-400 hover:text-blue-300 text-sm font-medium bg-gray-800 px-4 py-2 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : 'Load More Messages'}
+            </button>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="text-center text-gray-400 py-8">
             <svg className="w-12 h-12 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
