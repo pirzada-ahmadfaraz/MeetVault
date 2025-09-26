@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { 
   VideoCameraIcon,
   Bars3Icon,
@@ -19,14 +18,9 @@ export default function LandingNavbar() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <Image
-                src="/logo.png"
-                alt="Logo"
-                width={28}
-                height={28}
-                className="rounded-md"
-                priority
-              />
+              <div className="bg-emerald-600 p-2 rounded-lg">
+                <VideoCameraIcon className="h-6 w-6 text-white" />
+              </div>
               <span className="text-xl font-bold text-white">MeetVault</span>
             </Link>
           </div>

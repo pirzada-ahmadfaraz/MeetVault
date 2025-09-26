@@ -11,6 +11,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'MeetVault - Connect & Collaborate',
   description: 'Modern video conferencing platform for seamless communication',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
