@@ -10,6 +10,13 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+frontend/.env*
+src/.env*
+.vercel
+.env.*
+.envrc
+*.secret
+*.key
 
 # Logs
 logs
@@ -49,6 +56,13 @@ coverage/
 *.swp
 *.swo
 *~
+
+# Build outputs
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/.cache/
+public-release/
 
 # OS generated files
 .DS_Store

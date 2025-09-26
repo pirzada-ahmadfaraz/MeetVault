@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "test": "jest",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "release:public": "node tools/create-public-release.mjs"
   },
   "keywords": [
     "video-conference",
