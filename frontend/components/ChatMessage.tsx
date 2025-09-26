@@ -22,7 +22,7 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
   if (message.messageType === 'system') {
     return (
       <div className="flex justify-center">
-        <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+        <div className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm border border-gray-700">
           {message.content}
         </div>
       </div>
@@ -35,7 +35,7 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
         {/* Avatar */}
         {!isOwn && (
           <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-medium shadow-lg">
               {getInitials(message.sender.firstName, message.sender.lastName)}
             </div>
           </div>
@@ -46,10 +46,10 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
           {/* Sender name and time */}
           {!isOwn && (
             <div className="flex items-center space-x-2 mb-1">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-white">
                 {message.sender.firstName} {message.sender.lastName}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-400">
                 {formatTime(message.createdAt)}
               </span>
             </div>
@@ -57,15 +57,15 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
 
           {/* Message bubble */}
           <div
-            className={`px-3 py-2 rounded-lg ${
+            className={`px-4 py-2 rounded-2xl shadow-sm ${
               isOwn
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-900'
+                ? 'bg-blue-600 text-white rounded-br-md'
+                : 'bg-gray-800 text-gray-100 border border-gray-700 rounded-bl-md'
             }`}
           >
             {/* Reply indicator */}
             {message.replyTo && (
-              <div className={`text-xs mb-1 ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+              <div className={`text-xs mb-1 ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
                 Replying to: {message.replyTo.content.substring(0, 50)}
                 {message.replyTo.content.length > 50 ? '...' : ''}
               </div>
@@ -74,7 +74,7 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
             {/* Message content */}
             <div className="text-sm whitespace-pre-wrap break-words">
               {message.isDeleted ? (
-                <em className={isOwn ? 'text-blue-200' : 'text-gray-500'}>
+                <em className={isOwn ? 'text-blue-200' : 'text-gray-400'}>
                   This message was deleted
                 </em>
               ) : (
@@ -84,7 +84,7 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
 
             {/* Edited indicator */}
             {message.isEdited && !message.isDeleted && (
-              <div className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
+              <div className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
                 (edited)
               </div>
             )}
@@ -92,7 +92,7 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
 
           {/* Time for own messages */}
           {isOwn && (
-            <span className="text-xs text-gray-500 mt-1">
+            <span className="text-xs text-gray-400 mt-1">
               {formatTime(message.createdAt)}
             </span>
           )}
@@ -103,10 +103,10 @@ export default function ChatMessage({ message, isOwn }: ChatMessageProps) {
               {Object.entries(message.reactionSummary || {}).map(([emoji, data]) => (
                 <div
                   key={emoji}
-                  className="bg-gray-200 rounded-full px-2 py-1 text-xs flex items-center space-x-1"
+                  className="bg-gray-700 border border-gray-600 rounded-full px-2 py-1 text-xs flex items-center space-x-1 hover:bg-gray-600 transition-colors"
                 >
                   <span>{emoji}</span>
-                  <span className="text-gray-600">{data.count}</span>
+                  <span className="text-gray-300">{data.count}</span>
                 </div>
               ))}
             </div>
