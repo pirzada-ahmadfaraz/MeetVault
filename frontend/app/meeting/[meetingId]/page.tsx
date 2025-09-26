@@ -183,6 +183,33 @@ export default function MeetingPage() {
     )
   }
 
+  // If meeting is ended, show ended message instead of room
+  if (meeting && !meeting.isActive && meeting.endTime) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <div className="text-center max-w-md">
+            <div className="bg-gray-700 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">This meeting has ended</n>
+            <p className="text-gray-300 mb-6">The host has ended this meeting. You can return to your dashboard.</p>
+            <div>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }
+
   return (
     <ProtectedRoute>
       <MeetingRoom

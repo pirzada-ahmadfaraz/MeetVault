@@ -100,6 +100,11 @@ class MeetingController {
         return ApiResponse.notFound(res, 'Meeting not found');
       }
 
+      // Block joins if meeting already ended
+      if (!meeting.isActive && meeting.endTime) {
+        return ApiResponse.conflict(res, 'This meeting has already ended');
+      }
+
       // Check if meeting requires password
       if (meeting.settings.requirePassword) {
         if (!password) {
@@ -118,7 +123,11 @@ class MeetingController {
       );
 
       if (existingParticipant) {
-        return ApiResponse.conflict(res, 'You are already in this meeting');
+        // Be idempotent: return success with current meeting state
+        const updatedMeeting = await Meeting.findById(meeting._id)
+          .populate('host', 'username email firstName lastName')
+          .populate('participants.user', 'username email firstName lastName');
+        return ApiResponse.success(res, updatedMeeting, 'Already in meeting');
       }
 
       // Check meeting capacity

@@ -219,6 +219,26 @@ class SocketService {
         }
       });
 
+      // Auto-end meeting if host leaves (no matter others remain)
+      try {
+        const meeting = await Meeting.findOne({ meetingId });
+        if (meeting && meeting.host && meeting.host.toString() === socket.userId && meeting.isActive) {
+          await meeting.endMeeting();
+          this.io.to(meetingId).emit('meeting-ended', {
+            message: 'The meeting has been ended by the host',
+            hostName: `${socket.user.firstName} ${socket.user.lastName}`
+          });
+          // Remove all participants from the meeting room
+          const connectedSockets = await this.io.in(meetingId).fetchSockets();
+          for (const connectedSocket of connectedSockets) {
+            connectedSocket.leave(meetingId);
+            connectedSocket.currentMeeting = null;
+          }
+        }
+      } catch (e) {
+        console.error('Auto-end on host leave error:', e);
+      }
+
       socket.currentMeeting = null;
       console.log(`User ${socket.user.username} left meeting ${meetingId}`);
     } catch (error) {
@@ -701,6 +721,27 @@ class SocketService {
           lastName: socket.user.lastName
         }
       });
+
+      // If host disconnects, auto-end the meeting
+      (async () => {
+        try {
+          const meeting = await Meeting.findOne({ meetingId: socket.currentMeeting });
+          if (meeting && meeting.host && meeting.host.toString() === socket.userId && meeting.isActive) {
+            await meeting.endMeeting();
+            this.io.to(socket.currentMeeting).emit('meeting-ended', {
+              message: 'The meeting has been ended by the host',
+              hostName: `${socket.user.firstName} ${socket.user.lastName}`
+            });
+            const connectedSockets = await this.io.in(socket.currentMeeting).fetchSockets();
+            for (const connectedSocket of connectedSockets) {
+              connectedSocket.leave(socket.currentMeeting);
+              connectedSocket.currentMeeting = null;
+            }
+          }
+        } catch (e) {
+          console.error('Auto-end on host disconnect error:', e);
+        }
+      })();
     }
   }
 
