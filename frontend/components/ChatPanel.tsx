@@ -67,14 +67,17 @@ export default function ChatPanel({ meetingId }: ChatPanelProps) {
       const response = await chatAPI.getMessages(meetingId, page, 100)
 
       if (response.success) {
-        const newMessages = response.data.reverse() // API returns newest first, we want oldest first
+        // Sort messages by createdAt to ensure proper chronological order
+        const sortedMessages = response.data.sort((a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
 
         if (append) {
           // Append older messages to the beginning
-          setMessages(prev => [...newMessages, ...prev])
+          setMessages(prev => [...sortedMessages, ...prev])
         } else {
-          // Replace all messages (initial load)
-          setMessages(newMessages)
+          // Replace all messages (initial load) - newest at bottom
+          setMessages(sortedMessages)
         }
 
         // Check if there are more messages

@@ -22,6 +22,11 @@ export default function MeetingPage() {
 
   useEffect(() => {
     if (meetingId) {
+      // Check if user was previously in this meeting (session storage)
+      const wasInMeeting = sessionStorage.getItem(`meeting-joined-${meetingId}`)
+      if (wasInMeeting === 'true') {
+        setHasJoined(true)
+      }
       loadMeeting()
     }
   }, [meetingId])
@@ -36,12 +41,14 @@ export default function MeetingPage() {
       if (response.success) {
         setMeeting(response.data)
         
-        // Check if user is already a participant
-        const isParticipant = response.data.participants.some(
+        // Check if user is already a participant or was previously in the meeting
+        const wasInMeeting = sessionStorage.getItem(`meeting-joined-${meetingId}`) === 'true'
+        const isActiveParticipant = response.data.participants.some(
           p => p.user._id === user?._id && !p.leftAt
         )
-        
-        setHasJoined(isParticipant)
+
+        // User has joined if they're an active participant OR if they were previously in the meeting (refresh case)
+        setHasJoined(isActiveParticipant || wasInMeeting)
       } else {
         setError(response.message)
       }
@@ -60,10 +67,12 @@ export default function MeetingPage() {
   const handleJoinMeeting = async (password?: string) => {
     try {
       const response = await meetingAPI.joinMeeting(meetingId, password ? { password } : {})
-      
+
       if (response.success) {
         setMeeting(response.data)
         setHasJoined(true)
+        // Store in session storage to remember user joined this meeting
+        sessionStorage.setItem(`meeting-joined-${meetingId}`, 'true')
       } else {
         setError(response.message)
       }
@@ -76,10 +85,13 @@ export default function MeetingPage() {
   const handleLeaveMeeting = async () => {
     try {
       await meetingAPI.leaveMeeting(meetingId)
+      // Clear session storage when user explicitly leaves
+      sessionStorage.removeItem(`meeting-joined-${meetingId}`)
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Error leaving meeting:', error)
-      // Even if API call fails, redirect to dashboard
+      // Even if API call fails, clear session and redirect
+      sessionStorage.removeItem(`meeting-joined-${meetingId}`)
       router.push('/dashboard')
     }
   }
