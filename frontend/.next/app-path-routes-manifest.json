@@ -2,15 +2,15 @@
   "/_not-found/page": "/_not-found",
   "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
   "/favicon.ico/route": "/favicon.ico",
-  "/meeting/[meetingId]/page": "/meeting/[meetingId]",
+  "/about/page": "/about",
   "/dashboard/page": "/dashboard",
   "/meetings/page": "/meetings",
-  "/about/page": "/about",
-  "/profile/page": "/profile",
-  "/page": "/",
+  "/meeting/[meetingId]/page": "/meeting/[meetingId]",
   "/privacy/page": "/privacy",
-  "/terms/page": "/terms",
+  "/profile/page": "/profile",
   "/settings/page": "/settings",
-  "/auth/login/page": "/auth/login",
-  "/auth/register/page": "/auth/register"
+  "/page": "/",
+  "/terms/page": "/terms",
+  "/auth/register/page": "/auth/register",
+  "/auth/login/page": "/auth/login"
 }
