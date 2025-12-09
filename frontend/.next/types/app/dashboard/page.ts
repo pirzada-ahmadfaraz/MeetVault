@@ -1,4 +1,4 @@
-// File: /Users/ahmadfaraz/Desktop/Video Confrence Project/frontend/app/dashboard/page.tsx
+// File: /Users/ahmadfaraz/Desktop/Projects/Video Confrence Project/frontend/app/dashboard/page.tsx
 import * as entry from '../../../../app/dashboard/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

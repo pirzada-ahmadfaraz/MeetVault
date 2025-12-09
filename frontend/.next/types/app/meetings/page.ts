@@ -1,4 +1,4 @@
-// File: /Users/ahmadfaraz/Desktop/Video Confrence Project/frontend/app/meetings/page.tsx
+// File: /Users/ahmadfaraz/Desktop/Projects/Video Confrence Project/frontend/app/meetings/page.tsx
 import * as entry from '../../../../app/meetings/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

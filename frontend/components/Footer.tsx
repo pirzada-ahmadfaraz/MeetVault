@@ -16,24 +16,24 @@ const navigation = {
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900" aria-labelledby="footer-heading">
+    <footer className="bg-slate-950 border-t border-slate-800" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">
         Footer
       </h2>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-emerald-600 p-2 rounded-lg">
+              <div className="bg-indigo-600 p-2 rounded-lg">
                 <VideoCameraIcon className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold text-white">MeetVault</span>
             </div>
-            
-            <p className="text-gray-400 mb-6 max-w-md">
-              A project showcasing modern video conferencing capabilities 
+
+            <p className="text-slate-400 mb-6 max-w-md">
+              A project showcasing modern video conferencing capabilities
               built with Next.js, TypeScript, and real-time technologies.
             </p>
           </div>
@@ -46,7 +46,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {navigation.product.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-gray-400 hover:text-white transition-colors">
+                  <Link href={item.href} className="text-slate-400 hover:text-indigo-400 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -61,7 +61,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {navigation.legal.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-gray-400 hover:text-white transition-colors">
+                  <Link href={item.href} className="text-slate-400 hover:text-indigo-400 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -71,9 +71,9 @@ export default function Footer() {
         </div>
 
         {/* Bottom section */}
-        <div className="mt-16 pt-8 border-t border-gray-800">
+        <div className="mt-16 pt-8 border-t border-slate-800">
           <div className="text-center">
-            <div className="text-gray-400 text-sm">
+            <div className="text-slate-500 text-sm">
               © 2025 Ahmad Faraz. Built with Next.js & TypeScript.
             </div>
           </div>

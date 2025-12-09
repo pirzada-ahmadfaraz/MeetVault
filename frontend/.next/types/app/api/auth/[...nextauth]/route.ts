@@ -1,4 +1,4 @@
-// File: /Users/ahmadfaraz/Desktop/Video Confrence Project/frontend/app/api/auth/[...nextauth]/route.ts
+// File: /Users/ahmadfaraz/Desktop/Projects/Video Confrence Project/frontend/app/api/auth/[...nextauth]/route.ts
 import * as entry from '../../../../../../app/api/auth/[...nextauth]/route.js'
 import type { NextRequest } from 'next/server.js'
 

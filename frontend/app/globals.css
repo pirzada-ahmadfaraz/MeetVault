@@ -3,14 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #0f0f11;
+  --foreground: #fafafa;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
     --background: #ffffff;
-    --foreground: #171717;
+    --foreground: #0f0f11;
   }
 }
 
@@ -22,29 +24,24 @@ body {
 
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
-  /* Improve touch targets */
   button {
     min-height: 44px;
     min-width: 44px;
   }
 
-  /* Prevent zoom on input focus on iOS */
   input, select, textarea {
     font-size: 16px;
   }
 
-  /* Better video tile text rendering on mobile */
   .video-tile-text {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Smooth scrolling for mobile */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Prevent text selection on controls */
   .meeting-controls * {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -53,7 +50,7 @@ body {
   }
 }
 
-/* Force light mode text for better contrast in light backgrounds */
+/* Text color utilities */
 .bg-white .text-gray-900,
 .bg-white h1,
 .bg-white h2,
@@ -72,7 +69,6 @@ body {
   color: #111827 !important;
 }
 
-/* Ensure text visibility - Light mode */
 .text-gray-900 {
   color: #111827 !important;
 }
@@ -119,12 +115,11 @@ body {
   color: #9ca3af !important;
 }
 
-/* Enhanced button and form transitions */
+/* Clean button and form transitions */
 button, select, input {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.15s ease-out;
 }
 
-/* Prevent button click scrolling */
 button[type="button"] {
   position: relative;
 }
@@ -133,19 +128,19 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Settings page enhancements */
+/* Settings section hover */
 .settings-section {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .settings-section:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Toggle switch improvements */
+/* Toggle switch */
 [role="switch"] {
-  transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
 [role="switch"]:active {
@@ -153,20 +148,18 @@ button {
 }
 
 [role="switch"] span {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode toggle adjustments */
 .dark [role="switch"] {
   background-color: rgb(75 85 99);
 }
 
 .dark [role="switch"][aria-checked="true"] {
-  background-color: rgb(37 99 235);
+  background-color: rgb(99 102 241);
 }
 
-
-/* Dark mode select arrows - Maximum visibility */
+/* Dark mode select arrows */
 .dark select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
   background-size: 1.5em 1.5em;
@@ -178,10 +171,10 @@ button {
 }
 
 .dark select:focus {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3cpath stroke='%236366f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
 }
 
-/* Enhanced dropdown arrows for maximum visibility */
+/* Select arrows */
 select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
   background-position: right 0.75rem center;
@@ -198,7 +191,7 @@ select:hover {
 }
 
 select:focus {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3cpath stroke='%232563eb' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3cpath stroke='%236366f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
 }
 
 /* Focus states */
@@ -206,17 +199,17 @@ button:focus,
 select:focus,
 input:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
-/* Smooth hover effects */
+/* Subtle hover effects */
 .hover-lift {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 @layer utilities {
@@ -231,27 +224,40 @@ input:focus {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #94a3b8;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #64748b;
+}
+
+/* Dark mode scrollbar */
+.dark::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 /* Animation classes */
 .animate-fadeIn {
-  animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -260,7 +266,7 @@ input:focus {
 }
 
 .animate-slideIn {
-  animation: slideIn 0.4s ease-out;
+  animation: slideIn 0.3s ease-out;
 }
 
 @keyframes slideIn {
@@ -274,13 +280,13 @@ input:focus {
 
 /* Page transition animations */
 .page-transition {
-  animation: pageEnter 0.6s ease-out;
+  animation: pageEnter 0.4s ease-out;
 }
 
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -289,13 +295,13 @@ input:focus {
 }
 
 .form-transition {
-  animation: formSlideIn 0.7s ease-out;
+  animation: formSlideIn 0.5s ease-out;
 }
 
 @keyframes formSlideIn {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(10px);
   }
   to {
     opacity: 1;
@@ -304,13 +310,13 @@ input:focus {
 }
 
 .content-transition {
-  animation: contentFadeIn 0.8s ease-out;
+  animation: contentFadeIn 0.5s ease-out;
 }
 
 @keyframes contentFadeIn {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-10px);
   }
   to {
     opacity: 1;
@@ -320,15 +326,34 @@ input:focus {
 
 /* Loading spinner */
 .spinner {
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #3498db;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #6366f1;
   border-radius: 50%;
   width: 20px;
   height: 20px;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Glass card style - refined */
+.glass {
+  background: rgba(15, 15, 17, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Modern card style */
+.card-modern {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.card-modern:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(30, 41, 59, 0.7);
 }
