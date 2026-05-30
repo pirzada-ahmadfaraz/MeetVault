@@ -8,6 +8,7 @@ import { Meeting } from '@/types'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import MeetingRoom from '@/components/MeetingRoom'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { XMarkIcon, SignalSlashIcon } from '@heroicons/react/24/outline'
 
 export default function MeetingPage() {
   const params = useParams()
@@ -22,7 +23,6 @@ export default function MeetingPage() {
 
   useEffect(() => {
     if (meetingId) {
-      // Check persisted join state across tabs with TTL
       try {
         const raw = localStorage.getItem(`meeting-joined-${meetingId}`)
         if (raw) {
@@ -37,19 +37,16 @@ export default function MeetingPage() {
       } catch {}
       loadMeeting()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meetingId])
 
   const loadMeeting = async () => {
     try {
       setIsLoading(true)
       setError('')
-
       const response = await meetingAPI.getMeeting(meetingId)
-      
       if (response.success) {
         setMeeting(response.data)
-        
-        // Check if user is already a participant or was previously in the meeting
         let wasInMeeting = false
         try {
           const raw = localStorage.getItem(`meeting-joined-${meetingId}`)
@@ -59,22 +56,15 @@ export default function MeetingPage() {
             wasInMeeting = parsed && parsed.joined === true && (!parsed.expiresAt || parsed.expiresAt > now)
           }
         } catch {}
-        const isActiveParticipant = response.data.participants.some(
-          p => p.user._id === user?._id && !p.leftAt
-        )
-
-        // User has joined if they're an active participant OR if they were previously in the meeting (refresh case)
+        const isActiveParticipant = response.data.participants.some((p) => p.user._id === user?._id && !p.leftAt)
         setHasJoined(isActiveParticipant || wasInMeeting)
       } else {
         setError(response.message)
       }
     } catch (error: any) {
       console.error('Error loading meeting:', error)
-      if (error.response?.status === 404) {
-        setError('Meeting not found. Please check the meeting ID.')
-      } else {
-        setError('Failed to load meeting. Please try again.')
-      }
+      if (error.response?.status === 404) setError('Meeting not found. Please check the meeting ID.')
+      else setError('Failed to load meeting. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -83,11 +73,9 @@ export default function MeetingPage() {
   const handleJoinMeeting = async (password?: string) => {
     try {
       const response = await meetingAPI.joinMeeting(meetingId, password ? { password } : {})
-
       if (response.success) {
         setMeeting(response.data)
         setHasJoined(true)
-        // Persist join across reloads/tabs with TTL (2 hours)
         const expiresAt = Date.now() + 2 * 60 * 60 * 1000
         localStorage.setItem(`meeting-joined-${meetingId}`, JSON.stringify({ joined: true, expiresAt }))
       } else {
@@ -95,16 +83,12 @@ export default function MeetingPage() {
       }
     } catch (error: any) {
       console.error('Error joining meeting:', error)
-      // Treat duplicate join as success for refresh/new tab flows
       if (error?.response?.status === 409 && /already in this meeting/i.test(error?.response?.data?.message || '')) {
         setHasJoined(true)
-        // Set a short TTL if we didn't have one yet
         const fallbackExpires = Date.now() + 60 * 60 * 1000
         try {
           const raw = localStorage.getItem(`meeting-joined-${meetingId}`)
-          if (!raw) {
-            localStorage.setItem(`meeting-joined-${meetingId}`, JSON.stringify({ joined: true, expiresAt: fallbackExpires }))
-          }
+          if (!raw) localStorage.setItem(`meeting-joined-${meetingId}`, JSON.stringify({ joined: true, expiresAt: fallbackExpires }))
         } catch {}
         return
       }
@@ -115,110 +99,69 @@ export default function MeetingPage() {
   const handleLeaveMeeting = async () => {
     try {
       await meetingAPI.leaveMeeting(meetingId)
-      // Clear persisted state when user explicitly leaves
       localStorage.removeItem(`meeting-joined-${meetingId}`)
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Error leaving meeting:', error)
-      // Even if API call fails, clear persisted state and redirect
       localStorage.removeItem(`meeting-joined-${meetingId}`)
       router.push('/dashboard')
     }
   }
 
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <ProtectedRoute>
+      <div className="grain min-h-screen flex items-center justify-center bg-ink text-fg p-4">{children}</div>
+    </ProtectedRoute>
+  )
+
   if (isLoading) {
     return (
-      <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="text-center">
-            <LoadingSpinner size="large" className="text-white" />
-            <p className="mt-4 text-white">Loading meeting...</p>
-          </div>
+      <Shell>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2.5 mb-4"><span className="tally-dot" /><span className="mono-label text-[0.55rem] text-muted">Connecting</span></div>
+          <LoadingSpinner size="large" />
+          <p className="mt-4 text-sm text-muted">Opening the control room…</p>
         </div>
-      </ProtectedRoute>
+      </Shell>
     )
   }
 
   if (error) {
     return (
-      <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="text-center max-w-md">
-            <div className="bg-red-600 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Unable to load meeting</h2>
-            <p className="text-gray-300 mb-6">{error}</p>
-            <div className="space-x-4">
-              <button
-                onClick={loadMeeting}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
-              >
-                Back to Dashboard
-              </button>
-            </div>
+      <Shell>
+        <div className="panel rounded-3xl p-8 text-center max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-tally-500/15 border border-tally-500/25 flex items-center justify-center mx-auto mb-4 text-tally-400"><XMarkIcon className="w-7 h-7" /></div>
+          <h2 className="font-display text-xl font-bold mb-2">Unable to load room</h2>
+          <p className="text-muted text-sm mb-6">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button onClick={loadMeeting} className="btn-live rounded-xl px-5 py-2.5 text-sm font-semibold">Try again</button>
+            <button onClick={() => router.push('/dashboard')} className="btn-ghost rounded-xl px-5 py-2.5 text-sm font-medium">Dashboard</button>
           </div>
         </div>
-      </ProtectedRoute>
+      </Shell>
     )
   }
 
   if (!meeting) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="text-center">
-            <p className="text-white">Meeting not found</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    )
+    return <Shell><p className="text-muted">Meeting not found</p></Shell>
   }
 
-  // If meeting is ended, show ended message instead of room
   if (meeting && !meeting.isActive && meeting.endTime) {
     return (
-      <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="text-center max-w-md">
-            <div className="bg-gray-700 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-white mb-2">This meeting has ended</h2>
-            <p className="text-gray-300 mb-6">The host has ended this meeting. You can return to your dashboard.</p>
-            <div>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Go to Dashboard
-              </button>
-            </div>
-          </div>
+      <Shell>
+        <div className="panel rounded-3xl p-8 text-center max-w-md">
+          <div className="w-16 h-16 rounded-2xl border border-white/8 bg-white/[0.02] flex items-center justify-center mx-auto mb-4 text-faint"><SignalSlashIcon className="w-7 h-7" /></div>
+          <h2 className="font-display text-xl font-bold mb-2">This room has ended</h2>
+          <p className="text-muted text-sm mb-6">The host ended this meeting. You can head back to your dashboard.</p>
+          <button onClick={() => router.push('/dashboard')} className="btn-live rounded-xl px-6 py-3 font-semibold">Go to dashboard</button>
         </div>
-      </ProtectedRoute>
+      </Shell>
     )
   }
 
   return (
     <ProtectedRoute>
-      <MeetingRoom
-        meeting={meeting}
-        hasJoined={hasJoined}
-        onJoin={handleJoinMeeting}
-        onLeave={handleLeaveMeeting}
-        onError={setError}
-      />
+      <MeetingRoom meeting={meeting} hasJoined={hasJoined} onJoin={handleJoinMeeting} onLeave={handleLeaveMeeting} onError={setError} />
     </ProtectedRoute>
   )
 }

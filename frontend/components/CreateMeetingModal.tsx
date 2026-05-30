@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { meetingAPI } from '@/lib/api'
 import { Meeting, CreateMeetingData } from '@/types'
 import LoadingSpinner from './LoadingSpinner'
@@ -14,22 +13,17 @@ interface CreateMeetingModalProps {
   onMeetingCreated: (meeting: Meeting) => void
 }
 
-export default function CreateMeetingModal({ 
-  isOpen, 
-  onClose, 
-  onMeetingCreated 
-}: CreateMeetingModalProps) {
+const DEFAULT_SETTINGS = {
+  allowChat: true,
+  allowScreenShare: true,
+  requirePassword: false,
+  waitingRoom: false,
+  muteParticipantsOnEntry: false,
+}
+
+export default function CreateMeetingModal({ isOpen, onClose, onMeetingCreated }: CreateMeetingModalProps) {
   const [formData, setFormData] = useState<CreateMeetingData>({
-    title: '',
-    description: '',
-    maxParticipants: 10,
-    settings: {
-      allowChat: true,
-      allowScreenShare: true,
-      requirePassword: false,
-      waitingRoom: false,
-      muteParticipantsOnEntry: false
-    }
+    title: '', description: '', maxParticipants: 10, settings: { ...DEFAULT_SETTINGS },
   })
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -39,18 +33,12 @@ export default function CreateMeetingModal({
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
     try {
       const meetingData: CreateMeetingData = {
         ...formData,
-        settings: {
-          ...formData.settings,
-          password: formData.settings?.requirePassword ? password : undefined
-        }
+        settings: { ...formData.settings, password: formData.settings?.requirePassword ? password : undefined },
       }
-
       const response = await meetingAPI.createMeeting(meetingData)
-      
       if (response.success) {
         onMeetingCreated(response.data)
         handleClose()
@@ -66,18 +54,7 @@ export default function CreateMeetingModal({
   }
 
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      maxParticipants: 10,
-      settings: {
-        allowChat: true,
-        allowScreenShare: true,
-        requirePassword: false,
-        waitingRoom: false,
-        muteParticipantsOnEntry: false
-      }
-    })
+    setFormData({ title: '', description: '', maxParticipants: 10, settings: { ...DEFAULT_SETTINGS } })
     setPassword('')
     setError('')
     onClose()
@@ -85,238 +62,78 @@ export default function CreateMeetingModal({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
-    
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
       if (name.startsWith('settings.')) {
         const settingName = name.replace('settings.', '')
-        setFormData(prev => ({
-          ...prev,
-          settings: {
-            ...prev.settings,
-            [settingName]: checked
-          }
-        }))
+        setFormData((prev) => ({ ...prev, settings: { ...prev.settings, [settingName]: checked } }))
       }
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'number' ? parseInt(value) : value
-      }))
+      setFormData((prev) => ({ ...prev, [name]: type === 'number' ? parseInt(value) : value }))
     }
   }
+
+  const settingsList = [
+    { name: 'allowChat', label: 'Allow chat' },
+    { name: 'allowScreenShare', label: 'Allow screen sharing' },
+    { name: 'waitingRoom', label: 'Enable waiting room' },
+    { name: 'muteParticipantsOnEntry', label: 'Mute on entry' },
+    { name: 'requirePassword', label: 'Require password' },
+  ] as const
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-50" />
+        <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <Dialog.Title as="h3" className="text-lg font-medium text-gray-900 dark:text-white">
-                    Create New Meeting
-                  </Dialog.Title>
-                  <button
-                    onClick={handleClose}
-                    className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <XMarkIcon className="h-5 w-5" />
-                  </button>
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden frost rounded-3xl p-6 text-left align-middle transition-all text-fg">
+                <div className="flex items-center justify-between mb-5">
+                  <Dialog.Title as="h3" className="font-display text-lg font-bold flex items-center gap-2.5"><span className="w-8 h-8 rounded-xl bg-lime-500/15 border border-lime-500/25 flex items-center justify-center text-lime-300"><PlusIcon className="h-4 w-4" /></span> New room</Dialog.Title>
+                  <button onClick={handleClose} className="w-8 h-8 rounded-full border border-white/8 bg-white/[0.02] flex items-center justify-center text-muted hover:text-fg transition-colors"><XMarkIcon className="h-4 w-4" /></button>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                    <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-                  </div>
-                )}
+                {error && <div className="mb-4 rounded-xl border border-tally-500/30 bg-tally-500/10 p-3"><p className="text-sm text-tally-300">{error}</p></div>}
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Meeting Title */}
                   <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Meeting Title *
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      name="title"
-                      required
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter meeting title"
-                      disabled={isLoading}
-                    />
+                    <label htmlFor="title" className="mono-label text-[0.5rem] text-faint block mb-1.5">Room title *</label>
+                    <input type="text" id="title" name="title" required value={formData.title} onChange={handleInputChange} className="field px-3.5 py-2.5 text-sm" placeholder="Weekly sync" disabled={isLoading} />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="mono-label text-[0.5rem] text-faint block mb-1.5">Description</label>
+                    <textarea id="description" name="description" rows={2} value={formData.description} onChange={handleInputChange} className="field px-3.5 py-2.5 text-sm resize-none" placeholder="Optional" disabled={isLoading} />
+                  </div>
+                  <div>
+                    <label htmlFor="maxParticipants" className="mono-label text-[0.5rem] text-faint block mb-1.5">Max participants</label>
+                    <input type="number" id="maxParticipants" name="maxParticipants" min="2" max="100" value={formData.maxParticipants} onChange={handleInputChange} className="field px-3.5 py-2.5 text-sm" disabled={isLoading} />
                   </div>
 
-                  {/* Description */}
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows={3}
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Optional description"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {/* Max Participants */}
-                  <div>
-                    <label htmlFor="maxParticipants" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Maximum Participants
-                    </label>
-                    <input
-                      type="number"
-                      id="maxParticipants"
-                      name="maxParticipants"
-                      min="2"
-                      max="100"
-                      value={formData.maxParticipants}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {/* Settings */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">Meeting Settings</h4>
-                    
-                    <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="settings.allowChat"
-                          checked={formData.settings?.allowChat}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          disabled={isLoading}
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Allow chat</span>
+                  <div className="space-y-2.5 pt-1">
+                    <h4 className="mono-label text-[0.5rem] text-faint">Settings</h4>
+                    {settingsList.map((s) => (
+                      <label key={s.name} className="flex items-center gap-2.5 cursor-pointer rounded-lg px-1 py-1 hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name={`settings.${s.name}`} checked={formData.settings?.[s.name as keyof typeof formData.settings] as boolean} onChange={handleInputChange} className="h-4 w-4 rounded border-white/20 bg-white/5 accent-lime-500" disabled={isLoading} />
+                        <span className="text-sm text-muted">{s.label}</span>
                       </label>
+                    ))}
 
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="settings.allowScreenShare"
-                          checked={formData.settings?.allowScreenShare}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          disabled={isLoading}
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Allow screen sharing</span>
-                      </label>
-
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="settings.waitingRoom"
-                          checked={formData.settings?.waitingRoom}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          disabled={isLoading}
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Enable waiting room</span>
-                      </label>
-
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="settings.muteParticipantsOnEntry"
-                          checked={formData.settings?.muteParticipantsOnEntry}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          disabled={isLoading}
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Mute participants on entry</span>
-                      </label>
-
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="settings.requirePassword"
-                          checked={formData.settings?.requirePassword}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          disabled={isLoading}
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Require password</span>
-                      </label>
-                    </div>
-
-                    {/* Password field (conditional) */}
                     {formData.settings?.requirePassword && (
-                      <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Meeting Password
-                        </label>
-                        <input
-                          type="text"
-                          id="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter password"
-                          disabled={isLoading}
-                          required
-                        />
+                      <div className="pt-1">
+                        <label htmlFor="password" className="mono-label text-[0.5rem] text-faint block mb-1.5">Room password</label>
+                        <input type="text" id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="field px-3.5 py-2.5 text-sm" placeholder="Enter password" disabled={isLoading} required />
                       </div>
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex space-x-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                      disabled={isLoading}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                      disabled={isLoading || !formData.title}
-                    >
-                      {isLoading ? (
-                        <>
-                          <LoadingSpinner size="small" className="mr-2" />
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Meeting'
-                      )}
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={handleClose} disabled={isLoading} className="btn-ghost flex-1 rounded-xl py-2.5 text-sm font-medium">Cancel</button>
+                    <button type="submit" disabled={isLoading || !formData.title} className="btn-live flex-1 rounded-xl py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                      {isLoading ? (<><LoadingSpinner size="small" /> Creating…</>) : 'Create room'}
                     </button>
                   </div>
                 </form>

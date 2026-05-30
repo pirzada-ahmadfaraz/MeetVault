@@ -2,14 +2,7 @@
 
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import {
-  XMarkIcon,
-  ClipboardIcon,
-  CheckIcon,
-  VideoCameraIcon,
-  ShareIcon,
-  CalendarIcon
-} from '@heroicons/react/24/outline'
+import { XMarkIcon, ClipboardIcon, CheckIcon, VideoCameraIcon, ShareIcon, EnvelopeIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Meeting } from '@/types'
 
 interface MeetingSuccessModalProps {
@@ -19,12 +12,7 @@ interface MeetingSuccessModalProps {
   onJoinNow?: (meetingId: string) => void
 }
 
-export default function MeetingSuccessModal({
-  isOpen,
-  onClose,
-  meeting,
-  onJoinNow
-}: MeetingSuccessModalProps) {
+export default function MeetingSuccessModal({ isOpen, onClose, meeting, onJoinNow }: MeetingSuccessModalProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
   if (!meeting) return null
@@ -39,9 +27,7 @@ export default function MeetingSuccessModal({
     }
   }
 
-  const getMeetingLink = () => {
-    return `${window.location.origin}/meeting/${meeting.meetingId}`
-  }
+  const getMeetingLink = () => `${window.location.origin}/meeting/${meeting.meetingId}`
 
   const shareViaEmail = () => {
     const subject = encodeURIComponent(`Join my meeting: ${meeting.title}`)
@@ -56,7 +42,6 @@ Or enter Meeting ID: ${meeting.meetingId}
 ${meeting.settings?.requirePassword ? '\nPassword will be provided separately for security.' : ''}
 
 Looking forward to meeting with you!`)
-
     window.open(`mailto:?subject=${subject}&body=${body}`)
   }
 
@@ -66,7 +51,6 @@ Looking forward to meeting with you!`)
 Link: ${getMeetingLink()}
 Meeting ID: ${meeting.meetingId}
 ${meeting.settings?.requirePassword ? '\nPassword will be provided separately.' : ''}`)
-
     window.open(`https://wa.me/?text=${text}`)
   }
 
@@ -81,173 +65,66 @@ Or enter Meeting ID: ${meeting.meetingId}
 ${meeting.settings?.requirePassword ? '\nPassword will be provided separately for security.' : ''}
 
 Looking forward to meeting with you!`
-
     copyToClipboard(inviteText, 'invite')
   }
+
+  const CopyRow = ({ label, value, field, mono = false }: { label: string; value: string; field: string; mono?: boolean }) => (
+    <div>
+      <label className="mono-label text-[0.5rem] text-faint block mb-1.5">{label}</label>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 px-3 py-2.5 rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden">
+          <div className={`text-sm text-fg truncate ${mono ? 'font-mono' : ''}`}>{value}</div>
+        </div>
+        <button onClick={() => copyToClipboard(value, field)} className="w-10 h-10 rounded-xl border border-white/8 bg-white/[0.02] flex items-center justify-center text-muted hover:text-fg transition-colors">
+          {copiedField === field ? <CheckIcon className="h-4 w-4 text-lime-400" /> : <ClipboardIcon className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-50" />
+        <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center">
-                    <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full mr-3">
-                      <CheckIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                    <Dialog.Title as="h3" className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Meeting Created!
-                    </Dialog.Title>
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden frost rounded-3xl p-6 text-left align-middle transition-all text-fg">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-9 h-9 rounded-xl bg-lime-500/15 border border-lime-500/25 flex items-center justify-center text-lime-300"><CheckCircleIcon className="h-5 w-5" /></span>
+                    <Dialog.Title as="h3" className="font-display text-lg font-bold">Room is ready</Dialog.Title>
                   </div>
-                  <button
-                    onClick={onClose}
-                    className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <XMarkIcon className="h-5 w-5" />
-                  </button>
+                  <button onClick={onClose} className="w-8 h-8 rounded-full border border-white/8 bg-white/[0.02] flex items-center justify-center text-muted hover:text-fg transition-colors"><XMarkIcon className="h-4 w-4" /></button>
                 </div>
 
-                {/* Meeting Info */}
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-5">
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                      {meeting.title}
-                    </h4>
-                    {meeting.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{meeting.description}</p>
-                    )}
+                    <h4 className="font-display text-lg font-bold">{meeting.title}</h4>
+                    {meeting.description && <p className="text-sm text-muted mt-0.5">{meeting.description}</p>}
                   </div>
-
-                  {/* Meeting ID */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Meeting ID
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
-                        <code className="text-sm text-gray-900 dark:text-white font-mono">
-                          {meeting.meetingId}
-                        </code>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(meeting.meetingId, 'id')}
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        title="Copy Meeting ID"
-                      >
-                        {copiedField === 'id' ? (
-                          <CheckIcon className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <ClipboardIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Meeting Link */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Meeting Link
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
-                        <div className="text-sm text-gray-900 dark:text-white truncate">
-                          {getMeetingLink()}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(getMeetingLink(), 'link')}
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        title="Copy Meeting Link"
-                      >
-                        {copiedField === 'link' ? (
-                          <CheckIcon className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <ClipboardIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  <CopyRow label="Room ID" value={meeting.meetingId} field="id" mono />
+                  <CopyRow label="Room link" value={getMeetingLink()} field="link" />
                 </div>
 
-                {/* Share Options */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Share with others
-                  </label>
+                <div className="mb-5">
+                  <label className="mono-label text-[0.5rem] text-faint block mb-2.5">Share with others</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={shareViaEmail}
-                      className="flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <CalendarIcon className="h-4 w-4 mr-2" />
-                      Email
-                    </button>
-                    <button
-                      onClick={shareViaWhatsApp}
-                      className="flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <ShareIcon className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </button>
+                    <button onClick={shareViaEmail} className="btn-ghost rounded-xl py-2.5 text-sm font-medium flex items-center justify-center gap-2"><EnvelopeIcon className="h-4 w-4" /> Email</button>
+                    <button onClick={shareViaWhatsApp} className="btn-ghost rounded-xl py-2.5 text-sm font-medium flex items-center justify-center gap-2"><ShareIcon className="h-4 w-4" /> WhatsApp</button>
                   </div>
-
-                  <button
-                    onClick={copyInviteText}
-                    className="w-full mt-3 flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    {copiedField === 'invite' ? (
-                      <>
-                        <CheckIcon className="h-4 w-4 mr-2 text-green-500" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardIcon className="h-4 w-4 mr-2" />
-                        Copy Invitation Text
-                      </>
-                    )}
+                  <button onClick={copyInviteText} className="btn-ghost w-full mt-3 rounded-xl py-2.5 text-sm font-medium flex items-center justify-center gap-2">
+                    {copiedField === 'invite' ? <><CheckIcon className="h-4 w-4 text-lime-400" /> Copied!</> : <><ClipboardIcon className="h-4 w-4" /> Copy invitation text</>}
                   </button>
                 </div>
 
-                {/* Actions */}
-                <div className="flex space-x-3">
-                  <button
-                    onClick={onClose}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Done
-                  </button>
+                <div className="flex gap-3">
+                  <button onClick={onClose} className="btn-ghost flex-1 rounded-xl py-2.5 text-sm font-medium">Done</button>
                   {onJoinNow && (
-                    <button
-                      onClick={() => onJoinNow(meeting.meetingId)}
-                      className="flex-1 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      <VideoCameraIcon className="h-4 w-4 mr-2" />
-                      Start Meeting
-                    </button>
+                    <button onClick={() => onJoinNow(meeting.meetingId)} className="btn-live flex-1 rounded-xl py-2.5 text-sm flex items-center justify-center gap-2"><VideoCameraIcon className="h-4 w-4" /> Start room</button>
                   )}
                 </div>
               </Dialog.Panel>

@@ -9,12 +9,10 @@ import Navbar from '@/components/Navbar'
 import CreateMeetingModal from '@/components/CreateMeetingModal'
 import MeetingCard from '@/components/MeetingCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { 
-  PlusIcon, 
+import {
+  PlusIcon,
   VideoCameraIcon,
   MagnifyingGlassIcon,
-  CalendarIcon,
-  ClockIcon
 } from '@heroicons/react/24/outline'
 
 export default function MeetingsPage() {
@@ -29,26 +27,19 @@ export default function MeetingsPage() {
 
   useEffect(() => {
     loadMeetings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter])
 
   const loadMeetings = async () => {
     try {
       setIsLoading(true)
       setError('')
-
-      // Load meetings based on filter
       const [recentMeetingsResponse, activeMeetingsResponse] = await Promise.all([
         meetingAPI.getUserMeetings(1, 20, statusFilter),
-        meetingAPI.getActiveMeetings()
+        meetingAPI.getActiveMeetings(),
       ])
-
-      if (recentMeetingsResponse.success) {
-        setMeetings(recentMeetingsResponse.data)
-      }
-
-      if (activeMeetingsResponse.success) {
-        setActiveMeetings(activeMeetingsResponse.data)
-      }
+      if (recentMeetingsResponse.success) setMeetings(recentMeetingsResponse.data)
+      if (activeMeetingsResponse.success) setActiveMeetings(activeMeetingsResponse.data)
     } catch (error: any) {
       console.error('Error loading meetings:', error)
       setError('Failed to load meetings. Please try again.')
@@ -58,7 +49,7 @@ export default function MeetingsPage() {
   }
 
   const handleMeetingCreated = (newMeeting: Meeting) => {
-    setMeetings(prev => [newMeeting, ...prev])
+    setMeetings((prev) => [newMeeting, ...prev])
     setIsCreateModalOpen(false)
   }
 
@@ -66,146 +57,90 @@ export default function MeetingsPage() {
     window.open(`/meeting/${meetingId}`, '_blank')
   }
 
-  const filteredMeetings = meetings.filter(meeting =>
-    meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    meeting.meetingId.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMeetings = meetings.filter(
+    (meeting) =>
+      meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      meeting.meetingId.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const filters = ['all', 'upcoming', 'active', 'completed']
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <div className="grain min-h-screen bg-ink text-fg">
         <Navbar />
-        
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Meetings</h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                  Manage all your meetings in one place.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                New Meeting
-              </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="font-display text-3xl font-extrabold">Meetings</h1>
+              <p className="text-muted mt-1.5">Every room you've hosted or joined, in one place.</p>
+            </div>
+            <button onClick={() => setIsCreateModalOpen(true)} className="btn-live rounded-xl px-5 py-3 font-semibold flex items-center justify-center gap-2 w-full sm:w-auto">
+              <PlusIcon className="h-4 w-4" /> New room
+            </button>
+          </div>
+
+          {/* Search + filters */}
+          <div className="panel rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <MagnifyingGlassIcon className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-faint" />
+              <input type="text" placeholder="Search by title or room ID…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="field pl-10 pr-4 py-2.5 text-sm" />
+            </div>
+            <div className="flex items-center rounded-xl border border-white/8 bg-white/[0.02] p-1">
+              {filters.map((f) => (
+                <button key={f} onClick={() => setStatusFilter(f)} className={`px-3 py-2 rounded-lg mono-label text-[0.5rem] transition-all ${statusFilter === f ? 'bg-lime-sheen text-[#11160a]' : 'text-faint hover:text-fg'}`}>
+                  {f}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Search and Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8 transition-colors duration-300">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1 relative">
-                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search meetings..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              >
-                <option value="all" className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white">All Meetings</option>
-                <option value="upcoming" className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white">Upcoming</option>
-                <option value="completed" className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white">Completed</option>
-                <option value="active" className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white">Active</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Active Meetings */}
+          {/* Active */}
           {activeMeetings.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <div className="w-3 h-3 bg-green-400 dark:bg-green-500 rounded-full mr-3 animate-pulse"></div>
-                Active Meetings
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="mb-9">
+              <div className="flex items-center gap-2.5 mb-4">
+                <span className="tally-dot" />
+                <h2 className="font-display text-xl font-bold">Live now</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeMeetings.map((meeting) => (
-                  <MeetingCard
-                    key={meeting._id}
-                    meeting={meeting}
-                    onJoin={() => handleJoinMeeting(meeting._id)}
-                  />
+                  <MeetingCard key={meeting._id} meeting={meeting} currentUserId={user?._id} onJoin={() => handleJoinMeeting(meeting.meetingId)} showJoinButton isActive />
                 ))}
               </div>
             </div>
           )}
 
-          {/* All Meetings */}
+          {/* All */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <CalendarIcon className="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" />
-              {statusFilter === 'all' ? 'All Meetings' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Meetings`}
-            </h2>
-
+            <h2 className="font-display text-xl font-bold mb-4 capitalize">{statusFilter === 'all' ? 'All meetings' : `${statusFilter} meetings`}</h2>
             {isLoading ? (
-              <div className="flex justify-center py-12">
-                <LoadingSpinner />
-              </div>
+              <div className="flex justify-center py-16"><LoadingSpinner size="large" /></div>
             ) : error ? (
-              <div className="text-center py-12">
-                <div className="text-red-600 dark:text-red-400 mb-4">{error}</div>
-                <button
-                  onClick={loadMeetings}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Try Again
-                </button>
+              <div className="panel rounded-2xl p-5 border-tally-500/30 text-center">
+                <p className="text-tally-300 text-sm mb-3">{error}</p>
+                <button onClick={loadMeetings} className="btn-live rounded-xl px-5 py-2.5 text-sm font-semibold">Try again</button>
               </div>
             ) : filteredMeetings.length === 0 ? (
-              <div className="text-center py-12">
-                <VideoCameraIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {searchQuery ? 'No meetings found' : 'No meetings yet'}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  {searchQuery
-                    ? 'Try adjusting your search or filters.'
-                    : 'Create your first meeting to get started.'
-                  }
-                </p>
-                {!searchQuery && (
-                  <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Create Meeting
-                  </button>
-                )}
+              <div className="panel rounded-2xl text-center py-16">
+                <div className="w-14 h-14 rounded-2xl border border-white/8 bg-white/[0.02] flex items-center justify-center text-faint mx-auto mb-4">
+                  <VideoCameraIcon className="h-6 w-6" />
+                </div>
+                <h3 className="font-display text-lg font-bold mb-1.5">{searchQuery ? 'No matches' : 'No meetings yet'}</h3>
+                <p className="text-muted text-sm mb-5">{searchQuery ? 'Try a different search or filter.' : 'Create your first room to get started.'}</p>
+                {!searchQuery && <button onClick={() => setIsCreateModalOpen(true)} className="btn-live rounded-xl px-6 py-3 font-semibold">Create room</button>}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredMeetings.map((meeting) => (
-                  <MeetingCard
-                    key={meeting._id}
-                    meeting={meeting}
-                    onJoin={() => handleJoinMeeting(meeting._id)}
-                  />
+                  <MeetingCard key={meeting._id} meeting={meeting} currentUserId={user?._id} onJoin={() => handleJoinMeeting(meeting.meetingId)} showJoinButton={meeting.isActive} />
                 ))}
               </div>
             )}
           </div>
         </main>
 
-        {/* Create Meeting Modal */}
-        <CreateMeetingModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onMeetingCreated={handleMeetingCreated}
-        />
+        <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onMeetingCreated={handleMeetingCreated} />
       </div>
     </ProtectedRoute>
   )

@@ -1,82 +1,56 @@
 import Link from 'next/link'
-import { VideoCameraIcon } from '@heroicons/react/24/outline'
+import BrandMark from './BrandMark'
 
 const navigation = {
   product: [
     { name: 'Features', href: '#features' },
     { name: 'Sign Up', href: '/auth/register' },
-    { name: 'Sign In', href: '/auth/login' }
+    { name: 'Sign In', href: '/auth/login' },
   ],
   legal: [
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' }
-  ]
+    { name: 'Privacy', href: '/privacy' },
+    { name: 'Terms', href: '/terms' },
+  ],
 }
-
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-950 border-t border-slate-800" aria-labelledby="footer-heading">
-      <h2 id="footer-heading" className="sr-only">
-        Footer
-      </h2>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company info */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-indigo-600 p-2 rounded-lg">
-                <VideoCameraIcon className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">MeetVault</span>
-            </div>
-
-            <p className="text-slate-400 mb-6 max-w-md">
-              A project showcasing modern video conferencing capabilities
-              built with Next.js, TypeScript, and real-time technologies.
+    <footer className="border-t border-white/10">
+      <div className="max-w-5xl mx-auto px-5 sm:px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+          <div className="md:col-span-6">
+            <BrandMark href="/" />
+            <p className="text-muted mt-5 max-w-xs text-sm leading-relaxed">
+              A quieter way to meet — HD video, screen share and chat, stripped back to what matters.
             </p>
           </div>
 
-          {/* Navigation sections */}
-          <div>
-            <h3 className="text-sm font-semibold text-white tracking-wider uppercase mb-4">
-              Quick Links
-            </h3>
-            <ul className="space-y-3">
+          <div className="md:col-span-3">
+            <h3 className="eyebrow text-faint mb-5 text-[0.58rem]">Product</h3>
+            <ul className="space-y-3.5">
               {navigation.product.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-slate-400 hover:text-indigo-400 transition-colors">
-                    {item.name}
-                  </Link>
+                  <Link href={item.href} className="text-sm text-muted hover:text-fg transition-colors">{item.name}</Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div>
-            <h3 className="text-sm font-semibold text-white tracking-wider uppercase mb-4">
-              Legal
-            </h3>
-            <ul className="space-y-3">
+          <div className="md:col-span-3">
+            <h3 className="eyebrow text-faint mb-5 text-[0.58rem]">Legal</h3>
+            <ul className="space-y-3.5">
               {navigation.legal.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-slate-400 hover:text-indigo-400 transition-colors">
-                    {item.name}
-                  </Link>
+                  <Link href={item.href} className="text-sm text-muted hover:text-fg transition-colors">{item.name}</Link>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        {/* Bottom section */}
-        <div className="mt-16 pt-8 border-t border-slate-800">
-          <div className="text-center">
-            <div className="text-slate-500 text-sm">
-              © 2025 Ahmad Faraz. Built with Next.js & TypeScript.
-            </div>
-          </div>
+        <div className="mt-16 pt-7 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-faint">© 2025 Ahmad Faraz</p>
+          <p className="text-xs text-faint">Built with Next.js &amp; WebRTC</p>
         </div>
       </div>
     </footer>

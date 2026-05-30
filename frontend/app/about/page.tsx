@@ -1,162 +1,81 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
-import { 
-  VideoCameraIcon,
-  CodeBracketIcon,
-  GlobeAltIcon,
-  UserGroupIcon
-} from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, VideoCameraIcon, CodeBracketIcon, GlobeAltIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import BrandMark from '@/components/BrandMark'
 
 export default function AboutPage() {
+  const highlights = [
+    { icon: VideoCameraIcon, title: 'Real-time communication', body: 'WebRTC and Socket.IO for video calls and instant messaging.' },
+    { icon: CodeBracketIcon, title: 'Modern tech stack', body: 'Next.js, TypeScript, Tailwind, Node.js, MongoDB.' },
+    { icon: GlobeAltIcon, title: 'Responsive design', body: 'Mobile-first, seamless across every device.' },
+    { icon: UserGroupIcon, title: 'Secure auth', body: 'JWT-based authentication with protected routes.' },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link
-            href="/"
-            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Back to Home
+    <div className="grain min-h-screen bg-ink text-fg">
+      <div className="border-b border-white/8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
+          <Link href="/" className="inline-flex items-center gap-2 mono-label text-[0.55rem] text-muted hover:text-fg transition-colors">
+            <ArrowLeftIcon className="h-3.5 w-3.5" /> Back to home
           </Link>
+          <BrandMark href="/" />
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Page Title */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            About{' '}
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              MeetVault
-            </span>
-          </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            A portfolio project demonstrating modern full-stack development
-            and real-time communication technologies.
-          </p>
+          <p className="mono-label text-[0.6rem] text-lime-400 mb-5">// The project</p>
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold mb-4">About <span className="text-lime-400">MeetVault</span></h1>
+          <p className="text-lg text-muted max-w-2xl mx-auto">A portfolio project demonstrating modern full-stack development and real-time communication.</p>
         </div>
 
-        {/* Project Overview */}
-        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Project Overview</h2>
-          <p className="text-gray-300 mb-6">
-            MeetVault is a full-stack video conferencing application built to showcase
-            modern web development skills and real-time communication technologies.
-            This project demonstrates proficiency in frontend and backend development,
-            WebRTC implementation, and responsive design.
+        <div className="panel rounded-2xl p-8 mb-6">
+          <h2 className="font-display text-2xl font-bold mb-4">Overview</h2>
+          <p className="text-muted mb-7 leading-relaxed">
+            MeetVault is a full-stack video conferencing application built to showcase modern web development and real-time communication — frontend and backend engineering, WebRTC, and responsive design.
           </p>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <VideoCameraIcon className="h-6 w-6 text-blue-400" />
+          <div className="grid md:grid-cols-2 gap-4">
+            {highlights.map((h) => (
+              <div key={h.title} className="flex items-start gap-3.5 rounded-2xl border border-white/8 bg-white/[0.015] p-4">
+                <div className="w-9 h-9 rounded-lg border border-white/8 bg-white/[0.02] flex items-center justify-center text-lime-400 flex-shrink-0"><h.icon className="h-4 w-4" /></div>
+                <div>
+                  <h3 className="font-semibold text-sm">{h.title}</h3>
+                  <p className="text-xs text-muted mt-0.5">{h.body}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-white">Real-time Communication</h3>
-                <p className="text-gray-400 text-sm">WebRTC and Socket.io for video calls and instant messaging</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <CodeBracketIcon className="h-6 w-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">Modern Tech Stack</h3>
-                <p className="text-gray-400 text-sm">Next.js, TypeScript, TailwindCSS, Node.js, MongoDB</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <GlobeAltIcon className="h-6 w-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">Responsive Design</h3>
-                <p className="text-gray-400 text-sm">Mobile-first approach with seamless cross-device experience</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <UserGroupIcon className="h-6 w-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">User Authentication</h3>
-                <p className="text-gray-400 text-sm">JWT-based secure authentication with protected routes</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Technical Details */}
-        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Technical Implementation</h2>
-
+        <div className="panel rounded-2xl p-8 mb-6">
+          <h2 className="font-display text-2xl font-bold mb-5">Technical implementation</h2>
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Frontend</h3>
-              <ul className="list-disc list-inside text-gray-300 space-y-1">
-                <li>Next.js 15 with App Router for server-side rendering and routing</li>
-                <li>TypeScript for type safety and better development experience</li>
-                <li>TailwindCSS for utility-first styling and responsive design</li>
-                <li>React Context API for state management</li>
-                <li>WebRTC for peer-to-peer video communication</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Backend</h3>
-              <ul className="list-disc list-inside text-gray-300 space-y-1">
-                <li>Node.js with Express.js for RESTful API development</li>
-                <li>Socket.io for real-time bidirectional communication</li>
-                <li>MongoDB for data persistence and user management</li>
-                <li>JWT (JSON Web Tokens) for secure authentication</li>
-                <li>bcrypt for password hashing and security</li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Key Features</h3>
-              <ul className="list-disc list-inside text-gray-300 space-y-1">
-                <li>User registration and authentication system</li>
-                <li>Real-time video conferencing with multiple participants</li>
-                <li>Instant messaging with emoji reactions</li>
-                <li>Screen sharing capabilities</li>
-                <li>Responsive design for desktop and mobile devices</li>
-                <li>Meeting room creation and management</li>
-              </ul>
-            </div>
+            {[
+              { h: 'Frontend', items: ['Next.js 15 App Router', 'TypeScript for type safety', 'TailwindCSS, utility-first', 'React Context for state', 'WebRTC for peer-to-peer video'] },
+              { h: 'Backend', items: ['Node.js + Express REST API', 'Socket.IO real-time signaling', 'MongoDB persistence', 'JWT authentication', 'bcrypt password hashing'] },
+              { h: 'Key features', items: ['Auth + protected routes', 'Multi-party video conferencing', 'Live chat with reactions', 'Screen sharing', 'Room creation & management'] },
+            ].map((s) => (
+              <div key={s.h}>
+                <h3 className="mono-label text-[0.55rem] text-lime-300 mb-2.5">{s.h}</h3>
+                <ul className="space-y-1.5">
+                  {s.items.map((i) => (
+                    <li key={i} className="flex items-center gap-2.5 text-sm text-muted"><span className="w-1 h-1 rounded-full bg-lime-400/70 flex-shrink-0" /> {i}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Developer Info */}
-        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-white mb-4">About the Developer</h2>
-          <p className="text-gray-300 mb-4">
-            This project was developed by Ahmad Faraz as a demonstration of full-stack
-            development capabilities and modern web technologies. The application showcases
-            skills in both frontend and backend development, real-time communication protocols,
-            and responsive user interface design.
+        <div className="panel rounded-2xl p-8">
+          <h2 className="font-display text-2xl font-bold mb-4">About the developer</h2>
+          <p className="text-muted mb-6 leading-relaxed">
+            Built by Ahmad Faraz as a demonstration of full-stack capabilities — frontend and backend engineering, real-time protocols, and responsive interface design.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link
-              href="/auth/register"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
-            >
-              Try the Application
-            </Link>
-            <a
-              href="#"
-              className="border border-blue-600 text-blue-400 px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition-colors text-center"
-            >
-              View Source Code
-            </a>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/auth/register" className="btn-live rounded-xl px-6 py-3 font-semibold text-center">Try the app</Link>
+            <a href="https://github.com/pirzada-ahmadfaraz/MeetVault" target="_blank" rel="noopener noreferrer" className="btn-ghost rounded-xl px-6 py-3 font-semibold text-center">View source</a>
           </div>
         </div>
       </div>

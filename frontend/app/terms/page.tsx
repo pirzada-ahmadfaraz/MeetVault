@@ -5,28 +5,28 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="grain min-h-screen bg-ink text-fg">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="border-b border-white/8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <Link
             href="/"
-            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
+            className="inline-flex items-center gap-2 mono-label text-[0.55rem] text-muted hover:text-fg transition-colors"
           >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Back to Home
+            <ArrowLeftIcon className="h-3.5 w-3.5" />
+            Back to home
           </Link>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         {/* Page Title */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Terms of Service</h1>
-          <p className="text-xl text-gray-300">Last updated: December 2024</p>
+          <h1 className="font-display text-4xl font-extrabold mb-3">Terms of <span className="text-lime-400">Service</span></h1>
+          <p className="mono-label text-[0.55rem] text-faint">Last updated · December 2024</p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-8 space-y-8">
+        <div className="panel rounded-2xl p-8 space-y-8 [&_h2]:font-display [&_h2]:text-fg [&_h3]:text-fg [&_p]:text-muted [&_li]:text-muted">
           {/* Introduction */}
           <section>
             <h2 className="text-2xl font-bold text-white mb-4">Introduction</h2>
@@ -174,9 +174,9 @@ export default function TermsOfServicePage() {
             <p className="text-gray-300 mb-4">
               If you have questions about these Terms of Service, please contact us:
             </p>
-            <div className="bg-gray-700 border border-gray-600 p-4 rounded-lg">
-              <p className="text-gray-300">
-                <strong className="text-white">Email:</strong> legal@meetvault.demo<br/>
+            <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
+              <p className="text-muted">
+                <strong className="text-fg">Email:</strong> legal@meetvault.demo<br/>
                 <strong className="text-white">Note:</strong> This is a portfolio project - the email is for demonstration purposes only.
               </p>
             </div>

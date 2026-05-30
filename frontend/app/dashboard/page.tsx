@@ -16,7 +16,7 @@ import {
   PlusIcon,
   VideoCameraIcon,
   ClockIcon,
-  UserGroupIcon
+  ArrowRightIcon,
 } from '@heroicons/react/24/outline'
 
 export default function DashboardPage() {
@@ -39,20 +39,12 @@ export default function DashboardPage() {
     try {
       setIsLoading(true)
       setError('')
-
-      // Load recent meetings and active meetings in parallel
       const [recentMeetingsResponse, activeMeetingsResponse] = await Promise.all([
         meetingAPI.getUserMeetings(1, 6, 'all'),
-        meetingAPI.getActiveMeetings()
+        meetingAPI.getActiveMeetings(),
       ])
-
-      if (recentMeetingsResponse.success) {
-        setMeetings(recentMeetingsResponse.data)
-      }
-
-      if (activeMeetingsResponse.success) {
-        setActiveMeetings(activeMeetingsResponse.data)
-      }
+      if (recentMeetingsResponse.success) setMeetings(recentMeetingsResponse.data)
+      if (activeMeetingsResponse.success) setActiveMeetings(activeMeetingsResponse.data)
     } catch (error: any) {
       console.error('Error loading meetings:', error)
       setError('Failed to load meetings. Please try again.')
@@ -62,7 +54,7 @@ export default function DashboardPage() {
   }
 
   const handleMeetingCreated = (newMeeting: Meeting) => {
-    setMeetings(prev => [newMeeting, ...prev.slice(0, 5)])
+    setMeetings((prev) => [newMeeting, ...prev.slice(0, 5)])
     setSelectedMeeting(newMeeting)
     setIsCreateModalOpen(false)
     setIsSuccessModalOpen(true)
@@ -76,17 +68,9 @@ export default function DashboardPage() {
   const handleStartMeeting = async (meetingId: string) => {
     try {
       setIsSuccessModalOpen(false)
-
-      // Start the meeting first
       const response = await meetingAPI.startMeeting(meetingId)
-
       if (response.success) {
-        // Update the meeting in our state
-        setMeetings(prev => prev.map(m =>
-          m.meetingId === meetingId ? response.data : m
-        ))
-
-        // Then join the meeting
+        setMeetings((prev) => prev.map((m) => (m.meetingId === meetingId ? response.data : m)))
         handleJoinMeeting(meetingId)
       } else {
         setError(response.message)
@@ -103,209 +87,101 @@ export default function DashboardPage() {
 
   const handleJoinByMeetingId = async (meetingId: string, password?: string) => {
     try {
-      // First try to join the meeting via API to validate credentials
       const response = await meetingAPI.joinMeeting(meetingId, password ? { password } : {})
-
-      if (response.success) {
-        // If successful, redirect to the meeting room
-        window.open(`/meeting/${meetingId}`, '_blank')
-      } else {
-        throw new Error(response.message)
-      }
+      if (response.success) window.open(`/meeting/${meetingId}`, '_blank')
+      else throw new Error(response.message)
     } catch (error: any) {
       console.error('Error joining meeting:', error)
-      throw error // Re-throw to let the modal handle the error
+      throw error
     }
   }
 
+  const quickActions = [
+    { icon: PlusIcon, title: 'Start a room', body: 'Spin up an instant room and invite people in.', cta: 'New room', onClick: () => setIsCreateModalOpen(true), primary: true },
+    { icon: VideoCameraIcon, title: 'Join a room', body: 'Enter a room ID to hop into an existing call.', cta: 'Join', onClick: () => setIsJoinModalOpen(true), primary: false },
+    { icon: ClockIcon, title: 'Schedule', body: 'Plan ahead and line up a room for later.', cta: 'Schedule', onClick: () => setIsCreateModalOpen(true), primary: false },
+  ]
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="grain min-h-screen bg-ink text-fg">
         <Navbar />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              Welcome back, {user?.firstName}!
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">
-              Start a new meeting or join an existing one to get connected.
-            </p>
+          <div className="mb-9">
+            <div className="inline-flex items-center gap-2 rounded-full border border-lime-500/25 bg-lime-500/[0.06] px-3 py-1.5 mb-4">
+              <span className="live-dot" />
+              <span className="mono-label text-[0.5rem] text-lime-300">On air · Studio ready</span>
+            </div>
+            <h1 className="font-display text-3xl sm:text-4xl font-extrabold">Welcome back, {user?.firstName}.</h1>
+            <p className="text-muted mt-2">Start a room or jump into an existing one — your control room is ready.</p>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {/* Create Meeting */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-lg">
-                  <PlusIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          {/* Quick actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+            {quickActions.map((a) => (
+              <div key={a.title} className="panel panel-hover rounded-2xl p-6 flex flex-col">
+                <div className="w-11 h-11 rounded-xl border border-white/8 bg-white/[0.02] flex items-center justify-center text-lime-400 mb-5">
+                  <a.icon className="h-5 w-5" />
                 </div>
+                <h3 className="font-display text-lg font-bold mb-1.5">{a.title}</h3>
+                <p className="text-sm text-muted mb-5 flex-1">{a.body}</p>
+                <button onClick={a.onClick} className={`${a.primary ? 'btn-live' : 'btn-ghost'} w-full rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2 group`}>
+                  {a.cta} <ArrowRightIcon className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </button>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                Start New Meeting
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                Create an instant meeting and invite others to join.
-              </p>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Start Meeting
-              </button>
-            </div>
-
-            {/* Join Meeting */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6 hover:border-green-300 dark:hover:border-green-700 transition-all duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
-                  <VideoCameraIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                Join Meeting
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                Enter a meeting ID to join an existing meeting.
-              </p>
-              <button
-                onClick={() => setIsJoinModalOpen(true)}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Join Meeting
-              </button>
-            </div>
-
-            {/* Schedule Meeting */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="bg-violet-100 dark:bg-violet-900/30 p-3 rounded-lg">
-                  <ClockIcon className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                Schedule Meeting
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                Plan a meeting for later and send invites to participants.
-              </p>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="w-full bg-violet-600 text-white py-2 px-4 rounded-lg hover:bg-violet-700 transition-colors"
-              >
-                Schedule
-              </button>
-            </div>
+            ))}
           </div>
 
-          {/* Active Meetings */}
+          {/* Active meetings */}
           {activeMeetings.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center mb-4">
-                <UserGroupIcon className="h-5 w-5 text-red-500 dark:text-red-400 mr-2" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Active Meetings</h2>
-                <span className="ml-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-medium px-2 py-1 rounded-full">
-                  LIVE
-                </span>
+            <div className="mb-10">
+              <div className="flex items-center gap-2.5 mb-4">
+                <span className="tally-dot" />
+                <h2 className="font-display text-xl font-bold">Live now</h2>
+                <span className="mono-label text-[0.45rem] text-tally-300 border border-tally-500/30 bg-tally-500/10 rounded-full px-2 py-0.5">On air</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeMeetings.map((meeting) => (
-                  <MeetingCard
-                    key={meeting._id}
-                    meeting={meeting}
-                    currentUserId={user?._id}
-                    onJoin={handleJoinMeeting}
-                    onStart={handleStartMeeting}
-                    onViewDetails={handleViewDetails}
-                    showJoinButton={true}
-                    isActive={true}
-                  />
+                  <MeetingCard key={meeting._id} meeting={meeting} currentUserId={user?._id} onJoin={handleJoinMeeting} onStart={handleStartMeeting} onViewDetails={handleViewDetails} showJoinButton isActive />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Recent Meetings */}
+          {/* Recent meetings */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Meetings</h2>
-
+            <h2 className="font-display text-xl font-bold mb-4">Recent rooms</h2>
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <LoadingSpinner size="large" />
-              </div>
+              <div className="flex items-center justify-center py-16"><LoadingSpinner size="large" /></div>
             ) : error ? (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
-                <p className="text-red-600 dark:text-red-400">{error}</p>
-                <button
-                  onClick={loadMeetings}
-                  className="mt-2 text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 font-medium"
-                >
-                  Try again
-                </button>
+              <div className="panel rounded-2xl p-5 border-tally-500/30">
+                <p className="text-tally-300 text-sm">{error}</p>
+                <button onClick={loadMeetings} className="mono-label text-[0.55rem] text-lime-400 hover:text-lime-300 mt-2">Try again</button>
               </div>
             ) : meetings.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {meetings.map((meeting) => (
-                  <MeetingCard
-                    key={meeting._id}
-                    meeting={meeting}
-                    currentUserId={user?._id}
-                    onJoin={handleJoinMeeting}
-                    onStart={handleStartMeeting}
-                    onViewDetails={handleViewDetails}
-                    showJoinButton={meeting.isActive}
-                  />
+                  <MeetingCard key={meeting._id} meeting={meeting} currentUserId={user?._id} onJoin={handleJoinMeeting} onStart={handleStartMeeting} onViewDetails={handleViewDetails} showJoinButton={meeting.isActive} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <VideoCameraIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No meetings yet</h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  Start your first meeting to begin collaborating with your team.
-                </p>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Create Your First Meeting
-                </button>
+              <div className="panel rounded-2xl text-center py-16">
+                <div className="w-14 h-14 rounded-2xl border border-white/8 bg-white/[0.02] flex items-center justify-center text-faint mx-auto mb-4">
+                  <VideoCameraIcon className="h-6 w-6" />
+                </div>
+                <h3 className="font-display text-lg font-bold mb-1.5">No rooms yet</h3>
+                <p className="text-muted text-sm mb-5">Start your first room to begin collaborating.</p>
+                <button onClick={() => setIsCreateModalOpen(true)} className="btn-live rounded-xl px-6 py-3 font-semibold">Create your first room</button>
               </div>
             )}
           </div>
         </main>
 
-        {/* Create Meeting Modal */}
-        <CreateMeetingModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onMeetingCreated={handleMeetingCreated}
-        />
-
-        {/* Meeting Details Modal */}
-        <MeetingDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => setIsDetailsModalOpen(false)}
-          meeting={selectedMeeting}
-          onJoin={handleJoinMeeting}
-        />
-
-        {/* Meeting Success Modal */}
-        <MeetingSuccessModal
-          isOpen={isSuccessModalOpen}
-          onClose={() => setIsSuccessModalOpen(false)}
-          meeting={selectedMeeting}
-          onJoinNow={handleStartMeeting}
-        />
-
-        {/* Join Meeting Modal */}
-        <JoinMeetingModal
-          isOpen={isJoinModalOpen}
-          onClose={() => setIsJoinModalOpen(false)}
-          onJoin={handleJoinByMeetingId}
-        />
+        <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onMeetingCreated={handleMeetingCreated} />
+        <MeetingDetailsModal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} meeting={selectedMeeting} onJoin={handleJoinMeeting} />
+        <MeetingSuccessModal isOpen={isSuccessModalOpen} onClose={() => setIsSuccessModalOpen(false)} meeting={selectedMeeting} onJoinNow={handleStartMeeting} />
+        <JoinMeetingModal isOpen={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)} onJoin={handleJoinByMeetingId} />
       </div>
     </ProtectedRoute>
   )

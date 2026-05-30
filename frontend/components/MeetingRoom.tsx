@@ -413,91 +413,53 @@ export default function MeetingRoom({
   }
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col relative">
-      {/* Error Toast */}
+    <div className="h-screen bg-ink text-fg flex flex-col relative overflow-hidden">
+      {/* Error toast */}
       {error && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
-          <p className="text-sm font-medium">{error}</p>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] panel rounded-xl px-4 py-2.5 animate-fadeIn border-tally-500/40">
+          <p className="text-sm font-medium text-tally-300 flex items-center gap-2"><span className="tally-dot" />{error}</p>
         </div>
       )}
 
-      {/* Meeting Header */}
-      <div className="bg-gray-800 px-3 sm:px-4 py-2 sm:py-3">
-        {/* Mobile Layout */}
-        <div className="sm:hidden flex flex-col space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 flex-1 min-w-0">
-              <h1 className="text-white font-medium text-sm truncate">{meeting.title}</h1>
-            </div>
-            <button
-              onClick={onLeave}
-              className="bg-red-600 text-white px-3 py-1.5 rounded-md text-sm font-medium"
-            >
-              Leave
-            </button>
+      {/* Header */}
+      <div className="border-b border-white/8 bg-surface/80 backdrop-blur-xl px-3 sm:px-5 py-2.5 flex-shrink-0">
+        {/* Mobile */}
+        <div className="sm:hidden flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="font-display font-bold text-sm truncate">{meeting.title}</h1>
+            <button onClick={onLeave} className="bg-tally-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-tally">Leave</button>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-gray-300">
-                {participants.length + 1} participants
-              </span>
-            </div>
+            <span className="flex items-center gap-2"><span className="tally-dot" /><span className="mono-label text-[0.5rem] text-muted tabular-nums">{participants.length + 1} live</span></span>
             {meeting.settings.allowChat && (
-              <button
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`p-2 rounded-md transition-colors ${
-                  isChatOpen
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
+              <button onClick={() => setIsChatOpen(!isChatOpen)} className={`p-2 rounded-lg transition-colors ${isChatOpen ? 'bg-lime-500/15 text-lime-300 border border-lime-500/30' : 'bg-white/5 text-muted border border-white/8'}`}>
                 <ChatBubbleLeftRightIcon className="h-4 w-4" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Desktop Layout */}
+        {/* Desktop */}
         <div className="hidden sm:flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-white font-medium">{meeting.title}</h1>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-300">
-                {participants.length + 1} participants
-              </span>
-            </div>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 rounded-md bg-tally-500/15 border border-tally-500/30 px-2 py-1"><span className="tally-dot" /><span className="mono-label text-[0.5rem] text-tally-400">Live</span></span>
+            <h1 className="font-display font-bold">{meeting.title}</h1>
+            <span className="mono-label text-[0.5rem] text-muted tabular-nums">{participants.length + 1} connected</span>
           </div>
-
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             {meeting.settings.allowChat && (
-              <button
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`p-2 rounded-md transition-colors ${
-                  isChatOpen
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
+              <button onClick={() => setIsChatOpen(!isChatOpen)} className={`p-2.5 rounded-xl transition-colors ${isChatOpen ? 'bg-lime-500/15 text-lime-300 border border-lime-500/30' : 'bg-white/5 text-muted border border-white/8 hover:text-fg'}`}>
                 <ChatBubbleLeftRightIcon className="h-5 w-5" />
               </button>
             )}
-
-            <button
-              onClick={onLeave}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
-            >
-              Leave
-            </button>
+            <button onClick={onLeave} className="bg-tally-500 text-white px-4 py-2 rounded-xl font-semibold hover:brightness-110 transition-all shadow-tally">Leave</button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
-        {/* Video Area */}
-        <div className={`flex-1 flex flex-col ${isChatOpen && 'sm:mr-80'}`}>
+        <div className={`flex-1 flex flex-col min-h-0 ${isChatOpen && 'sm:mr-80'}`}>
           <div className="flex-1 p-2 sm:p-4 min-h-0">
             <VideoGrid
               participants={participants}
@@ -512,193 +474,125 @@ export default function MeetingRoom({
             />
           </div>
 
-          {/* Meeting Controls */}
-          <div className="p-3 sm:p-4 flex-shrink-0 bg-gray-800 sm:bg-transparent">
-            <MeetingControls
-              isVideoEnabled={isVideoEnabled}
-              isAudioEnabled={isAudioEnabled}
-              isScreenSharing={isScreenSharing}
-              allowScreenShare={meeting.settings.allowScreenShare}
-              onToggleVideo={handleToggleVideo}
-              onToggleAudio={handleToggleAudio}
-              onToggleScreenShare={handleToggleScreenShare}
-              onLeave={onLeave}
-              isHost={isHost}
-              onShowParticipants={handleShowParticipants}
-              onShowSettings={handleShowSettings}
-              onEndMeeting={handleEndMeeting}
-            />
+          {/* Controls dock */}
+          <div className="p-3 sm:p-4 flex-shrink-0">
+            <div className="mx-auto w-fit sm:panel sm:rounded-2xl sm:px-3 sm:py-2.5">
+              <MeetingControls
+                isVideoEnabled={isVideoEnabled}
+                isAudioEnabled={isAudioEnabled}
+                isScreenSharing={isScreenSharing}
+                allowScreenShare={meeting.settings.allowScreenShare}
+                onToggleVideo={handleToggleVideo}
+                onToggleAudio={handleToggleAudio}
+                onToggleScreenShare={handleToggleScreenShare}
+                onLeave={onLeave}
+                isHost={isHost}
+                onShowParticipants={handleShowParticipants}
+                onShowSettings={handleShowSettings}
+                onEndMeeting={handleEndMeeting}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Chat Panel */}
+        {/* Chat sidebar */}
         {isChatOpen && meeting.settings.allowChat && (
-          <div className="fixed sm:static inset-x-0 bottom-0 top-16 sm:top-0 sm:w-80 bg-gray-900 border-l border-gray-700 flex flex-col z-50 sm:z-auto shadow-2xl">
-            <div className="p-4 border-b border-gray-700 flex items-center justify-between bg-gray-800">
-              <h3 className="font-medium text-white flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                Chat
-              </h3>
-              <button
-                onClick={() => setIsChatOpen(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
+          <div className="fixed sm:static inset-x-0 bottom-0 top-16 sm:top-0 sm:w-80 bg-surface border-l border-white/8 flex flex-col z-50 sm:z-auto shadow-2xl min-h-0">
+            <div className="p-4 border-b border-white/8 flex items-center justify-between bg-surface-2/60 flex-shrink-0">
+              <h3 className="font-display font-bold flex items-center gap-2 text-sm"><ChatBubbleLeftRightIcon className="w-4 h-4 text-lime-400" /> Chat</h3>
+              <button onClick={() => setIsChatOpen(false)} className="text-muted hover:text-fg p-1 rounded-full hover:bg-white/5 transition-colors"><XMarkIcon className="h-5 w-5" /></button>
             </div>
             <ChatPanel meetingId={meeting.meetingId} />
           </div>
         )}
       </div>
 
-      {/* Participants Modal */}
+      {/* Participants modal */}
       {showParticipants && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
-          <div className="bg-gray-800 rounded-lg shadow-2xl p-6 w-96 max-h-96 overflow-y-auto border border-gray-600">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Participants ({participants.length + 1})</h3>
-              <button
-                onClick={() => setShowParticipants(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="frost rounded-3xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-display text-lg font-bold">Participants <span className="text-muted tabular-nums">({participants.length + 1})</span></h3>
+              <button onClick={() => setShowParticipants(false)} className="w-9 h-9 rounded-full border border-white/8 bg-white/[0.02] flex items-center justify-center text-muted hover:text-fg transition-colors"><XMarkIcon className="h-5 w-5" /></button>
             </div>
             <div className="space-y-2">
               {user && (
-                <div className="flex items-center justify-between p-3 bg-blue-900/50 rounded-lg border border-blue-700">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
-                      {user.firstName?.[0]}{user.lastName?.[0]}
-                    </div>
-                    <span className="font-medium text-white">{user.firstName} {user.lastName} (You)</span>
+                <div className="flex items-center justify-between p-3 rounded-2xl border border-lime-500/25 bg-lime-500/[0.06]">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-lime-500/20 border border-lime-500/30 flex items-center justify-center text-lime-300 font-display font-bold text-xs">{user.firstName?.[0]}{user.lastName?.[0]}</span>
+                    <span className="font-medium text-sm">{user.firstName} {user.lastName} (You)</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-medium text-blue-300 bg-blue-900/70 px-2 py-1 rounded">Host</span>
-                    <div className="flex items-center space-x-1">
-                      <div className={`w-3 h-3 rounded-full ${isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={isAudioEnabled ? 'Audio on' : 'Audio off'}></div>
-                      <div className={`w-3 h-3 rounded-full ${isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={isVideoEnabled ? 'Video on' : 'Video off'}></div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {isHost && <span className="mono-label text-[0.4rem] text-lime-300 bg-lime-500/10 border border-lime-500/25 px-2 py-0.5 rounded">Host</span>}
+                    <span className={`w-2.5 h-2.5 rounded-full ${isAudioEnabled ? 'bg-lime-400' : 'bg-tally-500'}`} title="Audio" />
+                    <span className={`w-2.5 h-2.5 rounded-full ${isVideoEnabled ? 'bg-lime-400' : 'bg-tally-500'}`} title="Video" />
                   </div>
                 </div>
               )}
               {participants.map((participant) => (
-                <div key={participant.id} className="flex items-center justify-between p-3 hover:bg-gray-700 rounded-lg transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
-                      {participant.user.firstName?.[0]}{participant.user.lastName?.[0]}
-                    </div>
-                    <span className="text-white">{participant.user.firstName} {participant.user.lastName}</span>
+                <div key={participant.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors border border-white/6">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-surface-3 border border-white/10 flex items-center justify-center font-display font-bold text-xs">{participant.user.firstName?.[0]}{participant.user.lastName?.[0]}</span>
+                    <span className="text-sm">{participant.user.firstName} {participant.user.lastName}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-1">
-                      <div className={`w-3 h-3 rounded-full ${participant.isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={participant.isAudioEnabled ? 'Audio on' : 'Audio off'}></div>
-                      <div className={`w-3 h-3 rounded-full ${participant.isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`} title={participant.isVideoEnabled ? 'Video on' : 'Video off'}></div>
-                    </div>
-                    {/* Host controls */}
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${participant.isAudioEnabled ? 'bg-lime-400' : 'bg-tally-500'}`} title="Audio" />
+                    <span className={`w-2.5 h-2.5 rounded-full ${participant.isVideoEnabled ? 'bg-lime-400' : 'bg-tally-500'}`} title="Video" />
                     {isHost && (
-                      <div className="flex items-center space-x-1">
-                        {/* Mute/Unmute button */}
+                      <div className="flex items-center gap-1 ml-1">
                         {participant.isAudioEnabled ? (
-                          <button
-                            onClick={() => handleMuteParticipant(participant.id)}
-                            className="text-yellow-400 hover:text-yellow-300 p-1 rounded-full hover:bg-yellow-900/30 transition-colors"
-                            title="Mute participant"
-                          >
-                            <SpeakerXMarkIcon className="h-4 w-4" />
-                          </button>
+                          <button onClick={() => handleMuteParticipant(participant.id)} className="text-amber-300 hover:text-amber-200 p-1.5 rounded-lg hover:bg-amber-500/10 transition-colors" title="Mute"><SpeakerXMarkIcon className="h-4 w-4" /></button>
                         ) : (
-                          <button
-                            onClick={() => handleUnmuteParticipant(participant.id)}
-                            className="text-green-400 hover:text-green-300 p-1 rounded-full hover:bg-green-900/30 transition-colors"
-                            title="Unmute participant"
-                          >
-                            <MicrophoneIcon className="h-4 w-4" />
-                          </button>
+                          <button onClick={() => handleUnmuteParticipant(participant.id)} className="text-lime-300 hover:text-lime-200 p-1.5 rounded-lg hover:bg-lime-500/10 transition-colors" title="Unmute"><MicrophoneIcon className="h-4 w-4" /></button>
                         )}
-                        {/* Remove button */}
-                        <button
-                          onClick={() => handleRemoveParticipant(participant.id)}
-                          className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-red-900/30 transition-colors"
-                          title="Remove participant"
-                        >
-                          <MinusCircleIcon className="h-4 w-4" />
-                        </button>
+                        <button onClick={() => handleRemoveParticipant(participant.id)} className="text-tally-400 hover:text-tally-300 p-1.5 rounded-lg hover:bg-tally-500/10 transition-colors" title="Remove"><MinusCircleIcon className="h-4 w-4" /></button>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
               {participants.length === 0 && (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-sm">No other participants have joined yet</div>
-                </div>
+                <div className="text-center py-8 mono-label text-[0.5rem] text-faint">No other participants yet</div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Settings Modal */}
+      {/* Settings modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
-          <div className="bg-gray-800 rounded-lg shadow-2xl p-6 w-96 border border-gray-600">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="frost rounded-3xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white">Settings</h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
+              <h3 className="font-display text-lg font-bold">Settings</h3>
+              <button onClick={() => setShowSettings(false)} className="w-9 h-9 rounded-full border border-white/8 bg-white/[0.02] flex items-center justify-center text-muted hover:text-fg transition-colors"><XMarkIcon className="h-5 w-5" /></button>
             </div>
             <div className="space-y-6">
               <div>
-                <h4 className="font-medium text-white mb-3">Audio & Video Controls</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                    <span className="text-sm font-medium text-gray-200">Camera</span>
+                <h4 className="mono-label text-[0.5rem] text-faint mb-3">Audio &amp; Video</h4>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl border border-white/8 bg-white/[0.015]">
+                    <span className="text-sm font-medium">Camera</span>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isVideoEnabled}
-                        onChange={handleToggleVideo}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <input type="checkbox" checked={isVideoEnabled} onChange={handleToggleVideo} className="sr-only peer" />
+                      <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-lime-500"></div>
                     </label>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                    <span className="text-sm font-medium text-gray-200">Microphone</span>
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl border border-white/8 bg-white/[0.015]">
+                    <span className="text-sm font-medium">Microphone</span>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isAudioEnabled}
-                        onChange={handleToggleAudio}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <input type="checkbox" checked={isAudioEnabled} onChange={handleToggleAudio} className="sr-only peer" />
+                      <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-lime-500"></div>
                     </label>
                   </div>
                 </div>
               </div>
               <div>
-                <h4 className="font-medium text-white mb-3">Meeting Information</h4>
-                <div className="bg-gray-700 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-300">Meeting ID:</span>
-                    <span className="text-sm font-mono text-white">{meeting.meetingId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-300">Title:</span>
-                    <span className="text-sm text-white">{meeting.title}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-300">Host:</span>
-                    <span className="text-sm text-white">{meeting.host.firstName} {meeting.host.lastName}</span>
-                  </div>
+                <h4 className="mono-label text-[0.5rem] text-faint mb-3">Room info</h4>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.015] p-4 space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted">Room ID</span><span className="font-mono">{meeting.meetingId}</span></div>
+                  <div className="flex justify-between"><span className="text-muted">Title</span><span className="font-medium">{meeting.title}</span></div>
+                  <div className="flex justify-between"><span className="text-muted">Host</span><span className="font-medium">{meeting.host.firstName} {meeting.host.lastName}</span></div>
                 </div>
               </div>
             </div>

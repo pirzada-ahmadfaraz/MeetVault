@@ -1,5 +1,6 @@
 import { Participant } from '@/services/webrtc'
 import VideoTile from './VideoTile'
+import { ComputerDesktopIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
 
 interface VideoGridProps {
   participants: Participant[]
@@ -22,29 +23,22 @@ export default function VideoGrid({
   isScreenSharing,
   currentUser,
   speakingParticipants = new Set(),
-  screenSharingParticipants = new Set()
+  screenSharingParticipants = new Set(),
 }: VideoGridProps) {
-  // Add current user as a participant for display
   const allParticipants: Participant[] = [
     ...(currentUser ? [{
       id: 'local',
       userId: currentUser._id,
       user: currentUser,
-      isHost: false, // This will be updated based on meeting data
+      isHost: false,
       isVideoEnabled,
-      isAudioEnabled: isAudioEnabled,
+      isAudioEnabled,
       isScreenSharing: false,
-      stream: localStream
+      stream: localStream,
     } as Participant] : []),
-    ...participants
+    ...participants,
   ]
 
-  // Only log when participants actually change
-  if (process.env.NODE_ENV === 'development') {
-    console.log('VideoGrid: Rendering with', allParticipants.length, 'participants')
-  }
-  
-  // Calculate grid layout based on number of participants (Mobile-first responsive)
   const getGridClasses = (count: number) => {
     if (count === 1) return 'grid-cols-1'
     if (count === 2) return 'grid-cols-1 sm:grid-cols-2'
@@ -60,57 +54,45 @@ export default function VideoGrid({
     return 'grid-rows-4 sm:grid-rows-3'
   }
 
-  // Check if anyone is screen sharing
-  const screenSharingUser = allParticipants.find(p => screenSharingParticipants.has(p.id))
+  const screenSharingUser = allParticipants.find((p) => screenSharingParticipants.has(p.id))
 
   if (screenSharingUser) {
-    // Screen sharing layout: main screen + small participant tiles (mobile-optimized)
     const screenStream = screenSharingUser.id === 'local' ? localStream : participantStreams.get(screenSharingUser.id)
-
     return (
-      <div className="h-full flex flex-col space-y-2 sm:space-y-4">
-        {/* Main screen sharing area */}
-        <div className="flex-1 bg-gray-900 rounded-lg overflow-hidden relative">
+      <div className="h-full flex flex-col gap-2 sm:gap-4">
+        <div className="flex-1 bg-ink rounded-2xl overflow-hidden relative border border-white/8">
           {screenStream ? (
             <video
               autoPlay
               playsInline
               muted={screenSharingUser.id === 'local'}
               className="w-full h-full object-contain"
-              ref={(video) => {
-                if (video && screenStream) {
-                  video.srcObject = screenStream
-                }
-              }}
+              ref={(video) => { if (video && screenStream) video.srcObject = screenStream }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <div className="text-center text-white px-4">
-                <div className="bg-green-600 p-3 sm:p-4 rounded-full w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-                  <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+              <div className="text-center px-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-lime-500/15 border border-lime-500/25 flex items-center justify-center mx-auto mb-4 text-lime-300">
+                  <ComputerDesktopIcon className="w-7 h-7" />
                 </div>
-                <h3 className="text-base sm:text-lg font-medium mb-1 sm:mb-2">Screen Share</h3>
-                <p className="text-gray-300 text-sm">{screenSharingUser.user.firstName} is sharing their screen</p>
+                <h3 className="font-display font-bold text-fg mb-1">Screen share</h3>
+                <p className="text-sm text-muted">{screenSharingUser.user.firstName} is sharing their screen</p>
               </div>
             </div>
           )}
-
-          {/* Screen sharing overlay info */}
-          <div className="absolute top-2 left-2 bg-black/60 text-white px-2 py-1 rounded text-xs">
-            {screenSharingUser.user.firstName} is sharing screen
+          <div className="absolute top-3 left-3 flex items-center gap-2 rounded-lg bg-black/55 backdrop-blur-sm border border-white/10 px-2.5 py-1">
+            <span className="live-dot" />
+            <span className="mono-label text-[0.45rem] text-fg">{screenSharingUser.user.firstName} · sharing</span>
           </div>
         </div>
 
-        {/* Small participant tiles */}
-        <div className="h-16 sm:h-24 flex space-x-2 overflow-x-auto pb-2">
+        <div className="h-16 sm:h-24 flex gap-2 overflow-x-auto pb-1">
           {allParticipants.map((participant) => (
             <div key={participant.id} className="flex-shrink-0 w-24 sm:w-32">
               <VideoTile
                 participant={participant}
                 stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
-                isSmall={true}
+                isSmall
                 showControls={false}
                 isSpeaking={speakingParticipants.has(participant.id)}
               />
@@ -121,30 +103,28 @@ export default function VideoGrid({
     )
   }
 
-  // Regular grid layout (mobile-optimized)
   return (
-    <div className={`h-full max-h-full grid gap-2 sm:gap-4 ${getGridClasses(allParticipants.length)} ${getGridRowClasses(allParticipants.length)} items-center justify-items-stretch`}>
+    <div className={`h-full max-h-full grid gap-2 sm:gap-3 ${getGridClasses(allParticipants.length)} ${getGridRowClasses(allParticipants.length)} items-center justify-items-stretch`}>
       {allParticipants.map((participant) => (
         <div key={participant.id} className="w-full aspect-video">
           <VideoTile
             participant={participant}
             stream={participant.id === 'local' ? localStream : participantStreams.get(participant.id)}
             isSmall={false}
-            showControls={true}
+            showControls
             isSpeaking={speakingParticipants.has(participant.id)}
           />
         </div>
       ))}
 
-      {/* Empty state when no participants */}
       {allParticipants.length === 0 && (
         <div className="col-span-full flex items-center justify-center h-full">
-          <div className="text-center text-gray-400 px-4">
-            <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <h3 className="text-base sm:text-lg font-medium mb-1 sm:mb-2">No participants yet</h3>
-            <p className="text-gray-500 text-sm sm:text-base">Waiting for participants to join the meeting</p>
+          <div className="text-center px-4">
+            <div className="w-14 h-14 rounded-2xl border border-white/8 bg-white/[0.02] flex items-center justify-center text-faint mx-auto mb-4">
+              <VideoCameraIcon className="w-6 h-6" />
+            </div>
+            <h3 className="font-display font-bold text-fg mb-1">No one here yet</h3>
+            <p className="mono-label text-[0.5rem] text-faint">Waiting for participants to join</p>
           </div>
         </div>
       )}

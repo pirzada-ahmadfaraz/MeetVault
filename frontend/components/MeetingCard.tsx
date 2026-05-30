@@ -4,7 +4,7 @@ import {
   ClockIcon,
   UserGroupIcon,
   VideoCameraIcon,
-  PlayIcon
+  PlayIcon,
 } from '@heroicons/react/24/outline'
 
 interface MeetingCardProps {
@@ -18,35 +18,18 @@ interface MeetingCardProps {
 }
 
 export default function MeetingCard({
-  meeting,
-  currentUserId,
-  onJoin,
-  onStart,
-  onViewDetails,
-  showJoinButton = false,
-  isActive = false
+  meeting, currentUserId, onJoin, onStart, onViewDetails, showJoinButton = false, isActive = false,
 }: MeetingCardProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No date set'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   const getMeetingStatus = () => {
-    if (meeting.isActive) {
-      return { text: 'Live', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' }
-    } else if (meeting.endTime) {
-      return { text: 'Ended', color: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300' }
-    } else if (meeting.scheduledStartTime && new Date(meeting.scheduledStartTime) > new Date()) {
-      return { text: 'Scheduled', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' }
-    } else {
-      return { text: 'Not started', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' }
-    }
+    if (meeting.isActive) return { text: 'Live', cls: 'border-tally-500/30 bg-tally-500/10 text-tally-300', live: true }
+    if (meeting.endTime) return { text: 'Ended', cls: 'border-white/10 bg-white/5 text-faint', live: false }
+    if (meeting.scheduledStartTime && new Date(meeting.scheduledStartTime) > new Date()) return { text: 'Scheduled', cls: 'border-lime-500/25 bg-lime-500/10 text-lime-300', live: false }
+    return { text: 'Standby', cls: 'border-amber-500/25 bg-amber-500/10 text-amber-300', live: false }
   }
 
   const status = getMeetingStatus()
@@ -55,115 +38,56 @@ export default function MeetingCard({
   const canJoin = meeting.isActive && !meeting.endTime
 
   return (
-    <div className={`bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-200 ${isActive ? 'ring-2 ring-red-200 dark:ring-red-800' : ''}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
-            {meeting.title}
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            ID: {meeting.meetingId}
-          </p>
+    <div className={`panel panel-hover rounded-2xl p-5 ${isActive ? 'border-tally-500/40' : ''}`}>
+      <div className="flex items-start justify-between mb-3 gap-3">
+        <div className="min-w-0">
+          <h3 className="font-display text-base font-bold truncate">{meeting.title}</h3>
+          <p className="mono-label text-[0.45rem] text-faint mt-1.5">ID · {meeting.meetingId}</p>
         </div>
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 mono-label text-[0.45rem] ${status.cls}`}>
+          {status.live && <span className="tally-dot" />}
           {status.text}
         </span>
       </div>
 
-      {/* Description */}
-      {meeting.description && (
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">
-          {meeting.description}
-        </p>
-      )}
+      {meeting.description && <p className="text-sm text-muted mb-4 line-clamp-2">{meeting.description}</p>}
 
-      {/* Meeting Details */}
-      <div className="space-y-2 mb-4">
-        {/* Host */}
-        <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-          <UserGroupIcon className="h-4 w-4 mr-2 text-slate-400 dark:text-slate-500" />
+      <div className="space-y-2 mb-5">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <UserGroupIcon className="h-3.5 w-3.5 text-faint" />
           <span>Host: {meeting.host.firstName} {meeting.host.lastName}</span>
         </div>
-
-        {/* Date/Time */}
-        <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-          <CalendarIcon className="h-4 w-4 mr-2 text-slate-400 dark:text-slate-500" />
-          <span>
-            {meeting.startTime
-              ? `Started: ${formatDate(meeting.startTime)}`
-              : meeting.scheduledStartTime
-                ? `Scheduled: ${formatDate(meeting.scheduledStartTime)}`
-                : 'Not scheduled'
-            }
-          </span>
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <CalendarIcon className="h-3.5 w-3.5 text-faint" />
+          <span>{meeting.startTime ? `Started ${formatDate(meeting.startTime)}` : meeting.scheduledStartTime ? `Scheduled ${formatDate(meeting.scheduledStartTime)}` : 'Not scheduled'}</span>
         </div>
-
-        {/* Duration */}
         {meeting.startTime && meeting.endTime && (
-          <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-            <ClockIcon className="h-4 w-4 mr-2 text-slate-400 dark:text-slate-500" />
-            <span>
-              Duration: {Math.round((new Date(meeting.endTime).getTime() - new Date(meeting.startTime).getTime()) / (1000 * 60))} min
-            </span>
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <ClockIcon className="h-3.5 w-3.5 text-faint" />
+            <span>Duration {Math.round((new Date(meeting.endTime).getTime() - new Date(meeting.startTime).getTime()) / 60000)} min</span>
           </div>
         )}
-
-        {/* Participants */}
-        <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-          <UserGroupIcon className="h-4 w-4 mr-2 text-slate-400 dark:text-slate-500" />
-          <span>
-            {meeting.currentParticipantCount || 0} / {meeting.maxParticipants} participants
-          </span>
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <UserGroupIcon className="h-3.5 w-3.5 text-faint" />
+          <span className="tabular-nums">{meeting.currentParticipantCount || 0} / {meeting.maxParticipants} connected</span>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex space-x-2">
+      <div className="flex gap-2">
         {canStart && onStart && (
-          <button
-            onClick={() => onStart(meeting.meetingId)}
-            className="flex-1 flex items-center justify-center py-2 px-4 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
-          >
-            <PlayIcon className="h-4 w-4 mr-2" />
-            Start Meeting
+          <button onClick={() => onStart(meeting.meetingId)} className="btn-live flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm">
+            <PlayIcon className="h-4 w-4" /> Start
           </button>
         )}
-
         {canJoin && showJoinButton && (
-          <button
-            onClick={() => onJoin(meeting.meetingId)}
-            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg text-sm font-medium transition-colors ${isActive
-                ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
-              }`}
-          >
-            {isActive ? (
-              <>
-                <PlayIcon className="h-4 w-4 mr-2" />
-                Join Live
-              </>
-            ) : (
-              <>
-                <VideoCameraIcon className="h-4 w-4 mr-2" />
-                Join Meeting
-              </>
-            )}
+          <button onClick={() => onJoin(meeting.meetingId)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive ? 'bg-tally-500 text-white hover:brightness-110 shadow-tally' : 'btn-live'}`}>
+            {isActive ? <><PlayIcon className="h-4 w-4" /> Join live</> : <><VideoCameraIcon className="h-4 w-4" /> Join</>}
           </button>
         )}
-
         {!canStart && !canJoin && !meeting.endTime && (
-          <div className="flex-1 text-center py-2 px-4 text-sm text-slate-500 dark:text-slate-400">
-            {isHost ? 'Ready to start' : 'Not started yet'}
-          </div>
+          <div className="flex-1 text-center py-2.5 mono-label text-[0.5rem] text-faint">{isHost ? 'Ready to start' : 'Not started yet'}</div>
         )}
-
-        <button
-          onClick={() => onViewDetails?.(meeting)}
-          className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-        >
-          Details
-        </button>
+        <button onClick={() => onViewDetails?.(meeting)} className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium">Details</button>
       </div>
     </div>
   )

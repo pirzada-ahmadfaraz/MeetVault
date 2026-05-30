@@ -20,8 +20,8 @@ export default function AuthLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-ink">
+        <div className="spinner" />
       </div>
     )
   }
@@ -30,9 +30,5 @@ export default function AuthLayout({
     return null // Will redirect to dashboard
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {children}
-    </div>
-  )
+  return <div className="grain min-h-screen bg-ink text-fg">{children}</div>
 }

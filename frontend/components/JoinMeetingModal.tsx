@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
-import { XMarkIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, VideoCameraIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from './LoadingSpinner'
 
 interface JoinMeetingModalProps {
@@ -12,11 +11,7 @@ interface JoinMeetingModalProps {
   onJoin: (meetingId: string, password?: string) => Promise<void>
 }
 
-export default function JoinMeetingModal({
-  isOpen,
-  onClose,
-  onJoin
-}: JoinMeetingModalProps) {
+export default function JoinMeetingModal({ isOpen, onClose, onJoin }: JoinMeetingModalProps) {
   const [meetingId, setMeetingId] = useState('')
   const [password, setPassword] = useState('')
   const [showPasswordField, setShowPasswordField] = useState(false)
@@ -25,22 +20,17 @@ export default function JoinMeetingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!meetingId.trim()) {
       setError('Please enter a meeting ID')
       return
     }
-
     setIsLoading(true)
     setError('')
-
     try {
       await onJoin(meetingId.trim(), password || undefined)
       handleClose()
     } catch (error: any) {
       console.error('Join meeting error:', error)
-
-      // Check if password is required
       if (error.response?.data?.message?.includes('password') || error.message?.includes('password')) {
         setShowPasswordField(true)
         setError('This meeting requires a password')
@@ -64,129 +54,49 @@ export default function JoinMeetingModal({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-50" />
+        <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <Dialog.Title as="h3" className="text-lg font-medium text-gray-900 dark:text-white">
-                    Join Meeting
-                  </Dialog.Title>
-                  <button
-                    onClick={handleClose}
-                    className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <XMarkIcon className="h-5 w-5" />
-                  </button>
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden frost rounded-3xl p-6 text-left align-middle transition-all text-fg">
+                <div className="flex items-center justify-between mb-5">
+                  <Dialog.Title as="h3" className="font-display text-lg font-bold flex items-center gap-2.5"><span className="w-8 h-8 rounded-xl bg-lime-500/15 border border-lime-500/25 flex items-center justify-center text-lime-300"><ArrowRightOnRectangleIcon className="h-4 w-4" /></span> Join a room</Dialog.Title>
+                  <button onClick={handleClose} className="w-8 h-8 rounded-full border border-white/8 bg-white/[0.02] flex items-center justify-center text-muted hover:text-fg transition-colors"><XMarkIcon className="h-4 w-4" /></button>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                    <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-                  </div>
-                )}
+                {error && <div className="mb-4 rounded-xl border border-tally-500/30 bg-tally-500/10 p-3"><p className="text-sm text-tally-300">{error}</p></div>}
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Meeting ID */}
                   <div>
-                    <label htmlFor="meetingId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Meeting ID *
-                    </label>
-                    <input
-                      type="text"
-                      id="meetingId"
-                      value={meetingId}
-                      onChange={(e) => setMeetingId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter meeting ID (e.g., 123abc456def)"
-                      disabled={isLoading}
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      The meeting ID provided by the host
-                    </p>
+                    <label htmlFor="meetingId" className="mono-label text-[0.5rem] text-faint block mb-1.5">Room ID *</label>
+                    <input type="text" id="meetingId" value={meetingId} onChange={(e) => setMeetingId(e.target.value)} className="field px-3.5 py-2.5 text-sm font-mono" placeholder="123abc456def" disabled={isLoading} required />
+                    <p className="mt-1.5 text-xs text-faint">The room ID shared by the host.</p>
                   </div>
 
-                  {/* Password field (conditional) */}
                   {showPasswordField && (
                     <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Meeting Password
-                      </label>
-                      <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter meeting password"
-                        disabled={isLoading}
-                      />
+                      <label htmlFor="password" className="mono-label text-[0.5rem] text-faint block mb-1.5">Room password</label>
+                      <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="field px-3.5 py-2.5 text-sm" placeholder="Enter password" disabled={isLoading} />
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className="flex space-x-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                      disabled={isLoading}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                      disabled={isLoading || !meetingId.trim()}
-                    >
-                      {isLoading ? (
-                        <>
-                          <LoadingSpinner size="small" className="mr-2" />
-                          Joining...
-                        </>
-                      ) : (
-                        <>
-                          <VideoCameraIcon className="h-4 w-4 mr-2" />
-                          Join Meeting
-                        </>
-                      )}
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={handleClose} disabled={isLoading} className="btn-ghost flex-1 rounded-xl py-2.5 text-sm font-medium">Cancel</button>
+                    <button type="submit" disabled={isLoading || !meetingId.trim()} className="btn-live flex-1 rounded-xl py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                      {isLoading ? (<><LoadingSpinner size="small" /> Joining…</>) : (<><VideoCameraIcon className="h-4 w-4" /> Join</>)}
                     </button>
                   </div>
                 </form>
 
-                {/* Instructions */}
-                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    How to join:
-                  </h4>
-                  <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    <li>• Enter the meeting ID shared by the host</li>
-                    <li>• If the meeting is password protected, you'll be prompted to enter it</li>
-                    <li>• Click "Join Meeting" to enter the meeting room</li>
+                <div className="mt-6 pt-4 border-t border-white/8">
+                  <h4 className="mono-label text-[0.5rem] text-faint mb-2.5">How to join</h4>
+                  <ul className="text-xs text-muted space-y-1.5">
+                    <li>• Enter the room ID shared by the host</li>
+                    <li>• If protected, you'll be prompted for a password</li>
+                    <li>• Hit Join to enter the control room</li>
                   </ul>
                 </div>
               </Dialog.Panel>

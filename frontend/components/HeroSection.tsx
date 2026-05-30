@@ -1,183 +1,82 @@
 import Link from 'next/link'
 import {
+  MicrophoneIcon,
   VideoCameraIcon,
-  UserGroupIcon,
+  ComputerDesktopIcon,
   ChatBubbleLeftRightIcon,
-  ComputerDesktopIcon
 } from '@heroicons/react/24/outline'
+
+const SPEAKERS = [
+  { initials: 'MT', label: 'Marcus' },
+  { initials: 'AR', label: 'Aisha' },
+  { initials: 'JL', label: 'Jonas' },
+]
 
 export default function HeroSection() {
   return (
-    <section className="relative bg-slate-950 overflow-hidden">
-      {/* Subtle background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 to-transparent"></div>
+    <section className="relative pt-44 pb-28">
+      <div className="max-w-5xl mx-auto px-5 sm:px-6">
+        {/* headline */}
+        <h1 className="font-display font-light tracking-[-0.02em] text-fg text-[2.9rem] leading-[1.04] sm:text-6xl lg:text-[5rem] lg:leading-[0.98]">
+          <span className="block reveal-load" style={{ animationDelay: '120ms' }}>A video room that</span>
+          <span className="block reveal-load" style={{ animationDelay: '210ms' }}>
+            gets <span className="serif-italic">out of the way.</span>
+          </span>
+        </h1>
 
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+        {/* sub */}
+        <p className="mt-9 max-w-xl text-lg text-muted leading-relaxed reveal-load" style={{ animationDelay: '320ms' }}>
+          HD video, screen share and chat — stripped back to what matters, and nothing else.
+        </p>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 lg:pt-32 lg:pb-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left content */}
-          <div className="text-center lg:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-              The Future of{' '}
-              <span className="text-indigo-400">
-                Remote Collaboration
-              </span>
-            </h1>
+        {/* actions */}
+        <div className="mt-10 flex items-center gap-7 reveal-load" style={{ animationDelay: '400ms' }}>
+          <Link href="/auth/register" className="btn-solid rounded-full px-7 py-3.5 text-sm">
+            Start a room
+          </Link>
+          <Link href="/auth/login" className="btn-line pb-0.5 text-sm">
+            Sign in
+          </Link>
+        </div>
+      </div>
 
-            <p className="mt-6 text-xl text-slate-400 leading-relaxed">
-              Experience seamless video communication with crystal-clear quality,
-              real-time collaboration tools, and secure connections. Built for teams
-              who demand excellence in their remote work experience.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="mt-8 flex justify-center lg:justify-start gap-4">
-              <Link
-                href="/auth/register"
-                className="group bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition-all duration-200 shadow-lg shadow-indigo-600/25"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  Get Started
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </span>
-              </Link>
-              <Link
-                href="#features"
-                className="text-slate-300 px-8 py-4 rounded-lg text-lg font-semibold hover:text-white border border-slate-700 hover:border-slate-600 transition-all duration-200"
-              >
-                Learn More
-              </Link>
-            </div>
-
-            {/* Stats */}
-            <div className="mt-12 flex flex-wrap gap-8 justify-center lg:justify-start">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-slate-500 text-sm">99.9% Uptime</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                <span className="text-slate-500 text-sm">256-bit Encryption</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-violet-500 rounded-full"></div>
-                <span className="text-slate-500 text-sm">HD Quality</span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right content - Product showcase */}
-          <div className="relative lg:ml-8">
-            {/* Main dashboard mockup */}
-            <div className="relative bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-800">
-              {/* Browser bar */}
-              <div className="bg-slate-800 px-4 py-3 flex items-center gap-2">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
-                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
-                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
-                </div>
-                <div className="flex-1 bg-slate-700 rounded mx-4 py-1 px-3 text-sm text-slate-400">
-                  meetvault.app/meeting/abc123
-                </div>
-              </div>
-
-              {/* Meeting interface mockup */}
-              <div className="bg-slate-950 p-4">
-                {/* Video grid */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden border border-slate-700"
-                    >
-                      <div className="relative text-white text-center">
-                        <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mx-auto mb-2">
-                          <VideoCameraIcon className="h-6 w-6 text-slate-400" />
-                        </div>
-                        <div className="text-xs font-medium text-slate-400">User {i}</div>
-                      </div>
-
-                      {/* Status indicators */}
-                      <div className="absolute bottom-2 right-2 flex gap-1">
-                        <div className="w-6 h-6 rounded bg-green-600 flex items-center justify-center">
-                          <VideoCameraIcon className="h-3 w-3 text-white" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Controls bar */}
-                <div className="flex justify-center gap-3">
-                  {[
-                    { icon: VideoCameraIcon, color: 'bg-slate-700' },
-                    { icon: UserGroupIcon, color: 'bg-slate-700' },
-                    { icon: ChatBubbleLeftRightIcon, color: 'bg-indigo-600' },
-                    { icon: ComputerDesktopIcon, color: 'bg-slate-700' },
-                  ].map((item, i) => (
-                    <div
-                      key={i}
-                      className={`w-12 h-12 rounded-full ${item.color} flex items-center justify-center`}
-                    >
-                      <item.icon className="h-6 w-6 text-white" />
-                    </div>
-                  ))}
-                  <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center">
-                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 16l1-1m1-1l1 1m-1-1l-1-1m1 1v2.5a.5.5 0 00.5.5h1" />
-                    </svg>
+      {/* product frame */}
+      <div className="mt-24 max-w-6xl mx-auto px-5 sm:px-6">
+        <div className="reveal-load" style={{ animationDelay: '520ms' }}>
+          <div className="panel rounded-[1.4rem] p-2.5 sm:p-3">
+            <div className="relative aspect-[16/9] rounded-[1rem] overflow-hidden bg-[#0d0d0f]">
+              {/* layout: main speaker + filmstrip */}
+              <div className="absolute inset-0 grid grid-cols-1 sm:grid-cols-[1fr_clamp(120px,22%,200px)] gap-2.5 p-2.5">
+                {/* main */}
+                <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-950 hidden sm:flex items-center justify-center">
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full border border-white/12 text-fg/70 font-display text-2xl">SK</span>
+                  {/* rec */}
+                  <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
+                    <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full rounded-full bg-[#ff4d52] opacity-60 rec-blink" /><span className="relative h-1.5 w-1.5 rounded-full bg-[#ff4d52]" /></span>
+                    <span className="eyebrow text-[0.5rem] text-white/55">Rec · 14:32</span>
                   </div>
+                  <span className="absolute bottom-3.5 left-3.5 text-[0.7rem] text-white/70">Sarah Kelly</span>
                 </div>
-              </div>
-            </div>
 
-            {/* Floating chat widget */}
-            <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-slate-900 border border-slate-800 rounded-lg shadow-xl p-4 w-64">
-              <div className="flex items-center gap-2 mb-3">
-                <ChatBubbleLeftRightIcon className="h-5 w-5 text-indigo-500" />
-                <span className="font-semibold text-white">Live Chat</span>
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="bg-slate-800 rounded-lg p-2">
-                  <div className="text-xs text-slate-500">Sarah</div>
-                  <div className="text-sm text-white">Great presentation! 👏</div>
-                </div>
-                <div className="bg-indigo-600 rounded-lg p-2 ml-8">
-                  <div className="text-xs text-indigo-200">You</div>
-                  <div className="text-sm text-white">Thanks everyone!</div>
+                {/* filmstrip */}
+                <div className="grid grid-rows-3 gap-2.5">
+                  {SPEAKERS.map((s) => (
+                    <div key={s.initials} className="relative rounded-xl overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 text-fg/60 font-display text-sm">{s.initials}</span>
+                      <span className="absolute bottom-2 left-2.5 text-[0.6rem] text-white/55">{s.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="mt-3 flex gap-2">
-                <div className="flex-1 bg-slate-800 rounded px-2 py-1 text-xs text-slate-500">
-                  Type a message...
-                </div>
-                <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center">
-                  <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Floating stats */}
-            <div className="absolute -left-4 bottom-8 bg-slate-900 border border-slate-800 rounded-lg shadow-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-600/20 rounded-full flex items-center justify-center">
-                  <UserGroupIcon className="h-6 w-6 text-green-500" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-white">12 Participants</div>
-                  <div className="text-xs text-slate-500">Connected worldwide</div>
-                </div>
+              {/* control bar */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-2 py-1.5">
+                {[MicrophoneIcon, VideoCameraIcon, ComputerDesktopIcon, ChatBubbleLeftRightIcon].map((Icon, i) => (
+                  <span key={i} className="h-8 w-8 rounded-full flex items-center justify-center text-white/65 hover:text-white transition-colors">
+                    <Icon className="w-4 h-4" />
+                  </span>
+                ))}
+                <span className="ml-1 h-8 px-3.5 rounded-full bg-[#ff4d52] text-white text-[0.7rem] font-medium flex items-center">Leave</span>
               </div>
             </div>
           </div>
